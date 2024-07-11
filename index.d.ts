@@ -47,6 +47,8 @@ declare namespace Router {
 
         state: any
         setState: Dispatch<SetStateAction<any>>
+
+        params: Record<string, string>
     }
 
     type RouterProps = {

@@ -1,10 +1,19 @@
-import React, {Children, createContext, isValidElement, ReactElement, useContext, useMemo} from 'react'
+import React, {Children, createContext, isValidElement, ReactElement, ReactNode, useContext, useMemo} from 'react'
 import {RouteItem} from '..'
 import {useRouter} from './router'
-import {outletContext} from './outlet'
 import {joinPath} from './util'
+import {Outlet, useConsumeDepth} from './outlet'
 
-const subPathContext = createContext('')
+type RouteStackContext = {
+    element: ReactNode
+    path: string
+}[]
+
+const routeStackContext = createContext([] as RouteStackContext)
+
+export function useRouteStack() {
+    return useContext(routeStackContext)
+}
 
 export function Routes({
     routes,
@@ -35,14 +44,18 @@ export function Routes({
 
     const {
         base,
-        location: {pathname}
+        location: {pathname},
+        params
     } = useRouter()
 
-    const parentPath = useContext(subPathContext)
+    const parentRouteStack = useRouteStack()
+    const consumeDepth = useConsumeDepth()
+    const parentPath = parentRouteStack[consumeDepth]?.path || ''
 
     const splitPath = useMemo(() => {
         const joinedBase = joinPath(base, parentPath)
         if (!RegExp('^' + joinedBase).test(pathname)) {
+            // pathname开头与joinedBase不匹配，说明不在当前路由下
             return null
         }
         return pathname
@@ -52,63 +65,51 @@ export function Routes({
             .split('/')
     }, [pathname, base, parentPath])
 
-    const {matchedElement, outlet, subPath} = useMemo(() => {
-        let matchedElement = null,
-            outlet = null,
-            subPath = ''
-
+    const routeStack = useMemo(() => {
+        const routeStack = [...parentRouteStack]
         if (splitPath) {
-            let splitIndex = 0,
-                routes = structuredRoutes
+            let splitIndex = 0
+            let routes: RouteItem[] | undefined = structuredRoutes
             const {length} = splitPath
-            while (splitIndex <= length) {
+            while (routes?.length && splitIndex <= length) {
                 // 遍历比长度多一次，最后一次只查找无path的子路由
                 const currentFragment = splitPath[splitIndex]
-
-                const route = routes.find(({path = ''}) => {
-                    if (path[0] === '/') {
-                        return currentFragment === path.slice(1)
-                    }
+                const route: RouteItem | undefined = routes.find(({path = ''}) => {
                     if (splitIndex === length) {
                         return !path
                     }
+                    if (path[0] === '/') {
+                        return currentFragment === path.slice(1)
+                    }
+                    if (path === '*') {
+                        return true
+                    }
+                    if (path[0] === ':') {
+                        // TODO 做到这里
+                        const paramName = path.slice(1)
+                        if (paramName) {
+                            params[paramName] = currentFragment
+                            return true
+                        }
+                    }
                     return currentFragment === path
                 })
-                if (!route) {
-                    outlet = null
-                    break
+                if (typeof route?.element !== 'undefined') {
+                    routeStack.push({
+                        element: route.element,
+                        path: splitPath.slice(0, splitIndex + 1).join('/')
+                    })
                 }
-                if (typeof route.element !== 'undefined') {
-                    if (matchedElement) {
-                        // 第二次匹配当作outlet，并终止循环
-                        outlet = (
-                            <subPathContext.Provider value={splitPath.slice(0, splitIndex + 1).join('/')}>
-                                {route.element}
-                            </subPathContext.Provider>
-                        )
-                        break
-                    }
-                    // 把第一次匹配当作返回结果，但继续尝试匹配
-                    matchedElement = route.element
-                    subPath = splitPath.slice(0, splitIndex + 1).join('/')
-                }
-                if (!route.children?.length) {
-                    outlet = null
-                    break
-                }
-                routes = route.children
+                routes = route?.children
                 splitIndex++
             }
         }
-
-        return {matchedElement, outlet, subPath}
-    }, [structuredRoutes, splitPath])
+        return routeStack
+    }, [parentRouteStack, structuredRoutes, splitPath])
 
     return (
-        <subPathContext.Provider value={subPath}>
-            <outletContext.Provider value={outlet}>
-                {matchedElement}
-            </outletContext.Provider>
-        </subPathContext.Provider>
+        <routeStackContext.Provider value={routeStack}>
+            <Outlet />
+        </routeStackContext.Provider>
     )
 }

@@ -55,16 +55,3 @@ export function joinPath(...paths: (string | undefined)[]) {
     }
     return paths.reduce(fn, '')
 }
-
-/**
- * 裁剪path，获得当前所在的片段
- * @param pathname 
- * @param base 
- */
-// export function snipPath(pathname: string, base: string) {
-//     const subPath = pathname.slice(base.length)
-//     const end = subPath.indexOf('/')
-//     return end > -1
-//         ? subPath.slice(0, end)
-//         : subPath
-// }
