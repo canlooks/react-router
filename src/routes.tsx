@@ -1,7 +1,7 @@
 import React, {Children, createContext, isValidElement, ReactElement, ReactNode, useContext, useMemo} from 'react'
-import {RouteItem} from '..'
+import {RouteItem, RouteProps, RoutesProps} from '..'
 import {useRouter} from './router'
-import {joinPath} from './util'
+import {joinPath} from './utils'
 import {Outlet, useConsumeDepth} from './outlet'
 
 type RouteStackContext = {
@@ -18,10 +18,7 @@ export function useRouteStack() {
 export function Routes({
     routes,
     children
-}: {
-    routes?: RouteItem[]
-    children?: ReactElement | ReactElement[]
-}) {
+}: RoutesProps) {
     const structuredRoutes = useMemo(() => {
         if (routes) {
             return routes
@@ -66,43 +63,41 @@ export function Routes({
     }, [pathname, base, parentPath])
 
     const routeStack = useMemo(() => {
+        if (!splitPath) {
+            return parentRouteStack
+        }
         const routeStack = [...parentRouteStack]
-        if (splitPath) {
-            let splitIndex = 0
-            let routes: RouteItem[] | undefined = structuredRoutes
-            const {length} = splitPath
-            while (routes?.length && splitIndex <= length) {
-                // 遍历比长度多一次，最后一次只查找无path的子路由
-                const currentFragment = splitPath[splitIndex]
-                const route: RouteItem | undefined = routes.find(({path = ''}) => {
-                    if (splitIndex === length) {
-                        return !path
-                    }
-                    if (path[0] === '/') {
-                        return currentFragment === path.slice(1)
-                    }
-                    if (path === '*') {
+        let splitIndex = 0
+        let routes: RouteItem[] | undefined = structuredRoutes
+        const {length} = splitPath
+        while (routes?.length && splitIndex <= length) {
+            // 遍历比长度多一次，最后一次只查找无path的子路由
+            const currentFragment = splitPath[splitIndex]
+            const route: RouteItem | undefined = routes.find(({path = ''}) => {
+                if (splitIndex === length) {
+                    return !path
+                }
+                if (path[0] === ':') {
+                    const paramName = path.slice(1)
+                    if (paramName) {
+                        params[paramName] = currentFragment
                         return true
                     }
-                    if (path[0] === ':') {
-                        // TODO 做到这里
-                        const paramName = path.slice(1)
-                        if (paramName) {
-                            params[paramName] = currentFragment
-                            return true
-                        }
-                    }
-                    return currentFragment === path
-                })
-                if (typeof route?.element !== 'undefined') {
-                    routeStack.push({
-                        element: route.element,
-                        path: splitPath.slice(0, splitIndex + 1).join('/')
-                    })
                 }
-                routes = route?.children
-                splitIndex++
+                path = path.replace(/^\/+/, '')
+                if (path.includes('*')) {
+                    return RegExp(`^${path.replace(/\*+/g, '.*')}$`).test(currentFragment)
+                }
+                return currentFragment === path
+            })
+            if (typeof route?.element !== 'undefined') {
+                routeStack.push({
+                    element: route.element,
+                    path: splitPath.slice(0, splitIndex + 1).join('/')
+                })
             }
+            routes = route?.children
+            splitIndex++
         }
         return routeStack
     }, [parentRouteStack, structuredRoutes, splitPath])
@@ -112,4 +107,8 @@ export function Routes({
             <Outlet />
         </routeStackContext.Provider>
     )
+}
+
+export function Route(props: RouteProps) {
+    return props.children
 }

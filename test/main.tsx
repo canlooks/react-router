@@ -1,34 +1,38 @@
-import React from 'react'
+import React, {lazy, Suspense} from 'react'
 import {createRoot} from 'react-dom/client'
-import {Outlet, Route, Router, Routes, useConsumeDepth, useParams, useQuery, useRouter} from '../src'
+import {Outlet, Route, Router, Routes, useParams, useQuery, useRouter} from '../src'
 import {RouteItem} from '..'
 
 createRoot(document.getElementById('app')!).render(<App />)
 
+const L = lazy(() => import('./lazy'))
+
 function App() {
     return (
-        <Router>
+        <Router mode="hash">
             <Index />
             <div>-------------------------------------------------------------------------</div>
-            <Routes>
-                <Route path="/" element="Index" />
-                <Route path="/a">
-                    <Route path="sub" element="Sub" />
-                    <Route path=":page" element={<HasParams />} />
-                    <Route path="*" element="Everything" />
-                </Route>
-                <Route path="/b">
-                    <Route element="B" />
-                </Route>
-                <Route path="/c">
-                    <Route path="d" element="C" />
-                </Route>
-                <Route path="/d" element={<HasOutlet />}>
-                    <Route element="Outlet Index" />
-                    <Route path="e" element="Outlet E" />
-                    <Route path="f" element={<SubRoutes />} />
-                </Route>
-            </Routes>
+            <Suspense>
+                <Routes>
+                    <Route path="/" element="Index" />
+                    <Route path="/a">
+                        <Route path="sub" element="Sub" />
+                        <Route path=":page" element={<HasParams />} />
+                        <Route path="*" element="Everything" />
+                    </Route>
+                    <Route path="/b">
+                        <Route element="B" />
+                    </Route>
+                    <Route path="/c">
+                        <Route path="d" element={<L />} />
+                    </Route>
+                    <Route path="/d" element={<HasOutlet />}>
+                        <Route element="Outlet Index" />
+                        <Route path="e" element="Outlet E" />
+                        <Route path="f" element={<SubRoutes />} />
+                    </Route>
+                </Routes>
+            </Suspense>
         </Router >
     )
 }
@@ -39,7 +43,7 @@ function Index() {
     return (
         <>
             <button onClick={() => router.navigate('/')}>index</button>
-            <button onClick={() => router.navigate('/a/sub')}>a</button>
+            <button onClick={() => router.navigate('a/sub')}>a</button>
             <button onClick={() => router.navigate('/a/abc')}>Everything</button>
             <button onClick={() => router.navigate('../b')}>b</button>
             <button onClick={() => router.navigate('/c/d')}>c</button>
@@ -65,7 +69,7 @@ function HasOutlet() {
 
 const subRoutes: RouteItem[] = [
     {element: 'Home'},
-    {path: 'user', element: 'User'},
+    {path: '*', element: 'User'},
     {
         path: 'post', element: <Post />, children: [
             {element: 'Post Detail'}
@@ -93,7 +97,7 @@ function Post() {
 
 function HasParams() {
     const params = useParams()
-console.log('params', params) // FIXME
+    console.log('params', params) // FIXME
     return (
         <>
             <h1>This component has params</h1>

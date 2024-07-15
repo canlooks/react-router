@@ -1,4 +1,4 @@
-import {Dispatch, ReactElement, ReactNode, SetStateAction} from 'react'
+import React, {Dispatch, ReactElement, ReactNode, SetStateAction} from 'react'
 
 declare namespace Router {
     /**
@@ -62,6 +62,22 @@ declare namespace Router {
 
     function useRouter(): RouterContext
 
+    function useQuery(): URLSearchParams
+
+    function useParams(): Record<string, string>
+
+    /**
+     * ---------------------------------------------------------------
+     * Routes
+     */
+
+    type RoutesProps = {
+        routes?: RouteItem[]
+        children?: ReactElement | ReactElement[]
+    }
+
+    function Routes(props: RoutesProps): ReactElement
+
     /**
      * ---------------------------------------------------------------
      * Route
@@ -77,18 +93,41 @@ declare namespace Router {
         children?: ReactNode
     }
 
-    // type RouteCommonProps ={
-    //     path?: string
-    // }
+    function Route(props: RouteProps): ReactElement
 
-    // interface RouteContext extends RouteCommonProps {
+    /**
+     * ---------------------------------------------------------------
+     * outlet
+     */
 
-    // }
+    function useOutlet(): ReactElement
 
-    // interface RouteProps extends RouteCommonProps {
-    //     element?: ReactNode
-    //     children?: ReactNode
-    // }
+    function Outlet(): ReactElement
+
+    /**
+     * ---------------------------------------------------------------
+     * navigate
+     */
+
+    function useNavigate(): RouterContext['navigate']
+
+    interface NavigateProps extends NavigateOptions {
+        to?: To
+        delta?: number
+    }
+
+    function Navigate(props: NavigateProps): ReactElement
+
+    type RedirectProps = Omit<NavigateProps, 'replace'>
+
+    /**
+     * ---------------------------------------------------------------
+     * link
+     */
+
+    interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
+        children?: ReactNode
+    }
 }
 
 export = Router

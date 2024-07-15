@@ -1,7 +1,29 @@
 {
   "name": "@canlooks/react-router",
   "version": "0.0.1",
+  "author": "C.CanLiang <canlooks@gmail.com>",
+  "description": "A very simple and lightweight react tool for responding data and managing state.",
+  "keywords": [
+    "react",
+    "router",
+    "react-router"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/canlooks/c_reactive"
+  },
+  "homepage": "https://gitee.com/canlooks/c_reactive",
+  "bugs": {
+    "url": "https://gitee.com/canlooks/c_reactive/issues",
+    "email": "canlooks@gmail.com"
+  },
+  "license": "MIT",
   "scripts": {
+    "build": "node build.js",
     "test": "vite -c test/vite.config.mts",
     "test:unit": "ts-node test/unit.ts"
   },

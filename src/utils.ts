@@ -44,14 +44,42 @@ function strOrNum(value: any): value is string | number {
 export function joinPath(...paths: (string | undefined)[]) {
     const fn = (prev: string, next?: string) => {
         if (!next) {
-            return prev
+            return prev.replace(/\/+$/, '')
         }
         if (next[0] === '/') {
-            // 以"/"开头会开启新路径
+            // "/"开头会开启新路径
             return next
         }
-        // 以"/"拼接
+        if (/^\.\./.test(next)) {
+            // ".."开头,去掉prev的前一段路径与next的".."或"../"，然后递归
+            return fn(
+                prev.replace(/\/[^\/]+$/, ''),
+                next.replace(/^\.\.\/?/, '')
+            )
+        }
+        if (next[0] === '.') {
+            // "."开头，去掉"."或"./"，然后递归
+            return fn(
+                prev,
+                next.replace(/^\.\/?/, '')
+            )
+        }
         return `${prev.replace(/\/+$/, '')}/${next}`
     }
     return paths.reduce(fn, '')
+}
+
+/**
+ * 获得跳转后的新路径，用于非history模式的路由跳转
+ * @param currentPath 
+ * @param navigateTo 
+ */
+export function navigatePath(currentPath: string, navigateTo: string) {
+    if (navigateTo[0] === '/') {
+        return navigateTo
+    }
+    return joinPath(
+        currentPath.replace(/\/[^\/]+$/, ''),
+        navigateTo
+    )
 }
