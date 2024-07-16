@@ -54,6 +54,9 @@ function Index() {
             <button onClick={() => router.navigate('/d/f/user')}>user</button>
             {/* <button onClick={() => router.navigate('/d/f/post')}>Post</button> */}
             <a href="/d/f/post">Post</a>
+            <button onClick={() => router.back()}>back</button>
+            <button onClick={() => router.forward()}>forward</button>
+
         </>
     )
 }

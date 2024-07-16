@@ -20,11 +20,16 @@ export function Router({
     }
 
     const [memoryHash, setMemoryHash] = useState(() => mode === 'hash'
-        ? location.hash.replace(/^#/, '')
+        ? location.hash.replace(/^#/, '') || '/'
         : ''
     )
 
-    const memoryStack = useRef<string[]>([])
+    const [memorisedStack, setMemorisedStack] = useState<string[]>(() => mode === 'hash'
+        ? [memoryHash]
+        : []
+    )
+
+    const [memoryStackIndex, setMemoryStackIndex] = useState(0)
 
     const params = useRef({})
 
@@ -52,31 +57,49 @@ export function Router({
         if (typeof a === 'number') {
             if (mode === 'history') {
                 history.go(a)
+            } else if (!a) {
+                return
+            }
+            // TODO mode === 'hash' || mode === 'memory'
+            const targetIndex = memoryStackIndex + a
+            const targetHash = memorisedStack[targetIndex]
+            if (typeof targetHash === 'string') {
+                setMemoryStackIndex(targetIndex)
+                updateMemoryHash(targetHash)
             }
         } else {
             const {replace, state = null} = options || {}
             if (mode === 'history') {
-                // history模式下，非"/"开头的路径直接交给History API处理
+                history.scrollRestoration = options?.scrollRestore === false ? 'manual' : 'auto'
                 const destination = a[0] === '/'
+                    // "/"开头拼接base
                     ? joinPath(base, a.slice(1))
+                    // 非"/"开头直接交给History API处理
                     : a
                 replace
                     ? history.replaceState(state, '', destination)
                     : history.pushState(state, '', destination)
+                updateLocation()
             } else {
                 // mode === 'hash' || mode === 'memory'
                 const destination = navigatePath(memoryHash, a)
-                if (replace) {
-                    memoryStack.current! = []
-                }
-                memoryStack.current!.push(destination)
-                if (mode === 'hash') {
-                    location.hash = destination
-                }
-                setMemoryHash(destination)
+                const newStack = replace
+                    ? []
+                    : memorisedStack.slice(0, memoryStackIndex + 1)
+                newStack.push(destination)
+                setMemorisedStack(newStack)
+                setMemoryStackIndex(newStack.length - 1)
+                updateMemoryHash(destination)
             }
-            updateLocation()
             setReactState(state)
+        }
+
+        function updateMemoryHash(hash: string) {
+            if (mode === 'hash') {
+                location.hash = hash
+                updateLocation()
+            }
+            setMemoryHash(hash)
         }
     }
 
@@ -90,12 +113,16 @@ export function Router({
     const back = () => {
         if (mode === 'history') {
             history.back()
+        } else {
+            navigate(-1)
         }
     }
 
     const forward = () => {
         if (mode === 'history') {
             history.forward()
+        } else {
+            navigate(1)
         }
     }
 

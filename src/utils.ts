@@ -34,7 +34,7 @@ export function isLocationChanged(copiedLocation: ILocation) {
  * @param value 
  */
 function strOrNum(value: any): value is string | number {
-    return ({string: true, number: true} as any)[typeof value]
+    return ({string: true, number: true} as any)[typeof value] || false
 }
 
 /**
@@ -79,6 +79,7 @@ export function navigatePath(currentPath: string, navigateTo: string) {
         return navigateTo
     }
     return joinPath(
+        // 清除currentPath的最后一段，再进行拼接
         currentPath.replace(/\/[^\/]+$/, ''),
         navigateTo
     )

@@ -1,4 +1,4 @@
-import React, {Dispatch, ReactElement, ReactNode, SetStateAction} from 'react'
+import {Dispatch, ReactElement, ReactNode, SetStateAction} from 'react'
 
 declare namespace Router {
     /**
@@ -14,7 +14,7 @@ declare namespace Router {
     type NavigateOptions = {
         state?: any
         replace?: boolean
-        // TODO Whether to restore the location to which the user has scrolled
+        // Whether to restore the location to which the user has scrolled
         scrollRestore?: boolean
     }
 
