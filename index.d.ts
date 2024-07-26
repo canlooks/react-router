@@ -32,10 +32,10 @@ declare namespace Router {
 
     type RouterContext = {
         mode: Mode
-
         base: string
-
         location: ILocation
+        /** The path used to match routes(excluding base {@link RouterContext.base}) */
+        routePath: string | null
 
         replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
 
@@ -72,7 +72,9 @@ declare namespace Router {
      */
 
     type RoutesProps = {
+        /** suggest to use routes */
         routes?: RouteItem[]
+        /** JSX style routes definition */
         children?: ReactElement | ReactElement[]
     }
 

@@ -25,7 +25,7 @@
   "scripts": {
     "build": "node build.js",
     "test": "vite -c test/vite.config.mts",
-    "test:unit": "ts-node test/unit.ts"
+    "test:unit": "ts-node test/unitTest.ts"
   },
   "dependencies": {
     "tslib": "^2.6.3"

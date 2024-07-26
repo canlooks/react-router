@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react'
 import {createContext, useContext, useMemo} from 'react'
 import {NavigateOptions, RouterContext, RouterProps} from '..'
-import {copyLocation, isLocationChanged, joinPath, navigatePath} from './utils'
+import {truncatePath, copyLocation, isLocationChanged, joinPath, navigatePath, clearEndSlash} from './utils'
 
 const routerContext = createContext({} as RouterContext)
 
@@ -14,10 +14,8 @@ export function Router({
     base = '/',
     children
 }: RouterProps) {
-    if (base[0] !== '/') {
-        // base必须以"/"开头
-        base = '/' + base
-    }
+    // 执行joinPath是为了统一base格式：以"/"开头，且末端无"/"
+    base = joinPath(base)
 
     const [memoryHash, setMemoryHash] = useState(() => mode === 'hash'
         ? location.hash.replace(/^#/, '') || '/'
@@ -31,27 +29,51 @@ export function Router({
 
     const [memoryStackIndex, setMemoryStackIndex] = useState(0)
 
-    const params = useRef({})
-
     const [copiedLocation, setCopiedLocation] = useState(() => copyLocation())
     const updateLocation = () => {
-        if (isLocationChanged(copiedLocation)) {
-            params.current = {}
-            setCopiedLocation(copyLocation())
-        }
+        isLocationChanged(copiedLocation) && setCopiedLocation(copyLocation())
     }
 
+    const params = useRef({})
+
     const locationUseByMode = useMemo(() => {
+        // location改变需要清空params
+        params.current = {}
         return mode === 'history'
             ? copiedLocation
             : new URL(memoryHash, copiedLocation.origin)
-    }, [mode, copiedLocation, memoryHash])
+    }, [copiedLocation, memoryHash, mode])
+
+    const routePath = useMemo(() => {
+        let truncated = truncatePath(locationUseByMode.pathname, base)
+        return truncated === null
+            ? null
+            // 若截断后为空字符串，表示当前处于base路径，返回'/'
+            : clearEndSlash(truncated) || '/'
+    }, [locationUseByMode, base])
 
     const [state, setReactState] = useState(null)
     const setState = (state: any) => {
         mode === 'history' && history.replaceState(state, '')
         setReactState(state)
     }
+
+    useEffect(() => {
+        if (mode === 'history') {
+            const popState = () => {
+                updateLocation()
+            }
+            addEventListener('popstate', popState)
+            return () => {
+                removeEventListener('popstate', popState)
+            }
+        }
+    }, [mode])
+
+    /**
+     * ------------------------------------------------------------------
+     * 路由跳转方法
+     */
 
     const navigate = (a: any, options?: NavigateOptions) => {
         if (typeof a === 'number') {
@@ -60,7 +82,7 @@ export function Router({
             } else if (!a) {
                 return
             }
-            // TODO mode === 'hash' || mode === 'memory'
+            // mode === 'hash' || mode === 'memory'
             const targetIndex = memoryStackIndex + a
             const targetHash = memorisedStack[targetIndex]
             if (typeof targetHash === 'string') {
@@ -126,22 +148,10 @@ export function Router({
         }
     }
 
-    useEffect(() => {
-        if (mode === 'history') {
-            const popState = () => {
-                updateLocation()
-            }
-            addEventListener('popstate', popState)
-            return () => {
-                removeEventListener('popstate', popState)
-            }
-        }
-    }, [mode])
-
     return (
         <routerContext.Provider value={
             useMemo(() => ({
-                mode, base, location: locationUseByMode, state, params: params.current,
+                mode, base, location: locationUseByMode, routePath, state, params: params.current,
                 replace, navigate, back, forward, setState
             }), [
                 mode, base, locationUseByMode, state, params.current

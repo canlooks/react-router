@@ -1,29 +1,29 @@
-import React, {Children, createContext, isValidElement, ReactElement, ReactNode, useContext, useMemo} from 'react'
+import React, {Children, createContext, isValidElement, memo, useContext, useMemo} from 'react'
 import {RouteItem, RouteProps, RoutesProps} from '..'
 import {useRouter} from './router'
-import {joinPath} from './utils'
-import {Outlet, useConsumeDepth} from './outlet'
+import {truncatePath, clearEndSlash} from './utils'
+import {consumeDepthContext, Outlet, useConsumeDepth} from './outlet'
 
-type RouteStackContext = {
-    element: ReactNode
-    path: string
-}[]
-
-const routeStackContext = createContext([] as RouteStackContext)
-
-export function useRouteStack() {
-    return useContext(routeStackContext)
+interface MatchedRouteItem extends RouteItem {
+    truncatedPath: string
 }
 
-export function Routes({
+const matchedRouteStackContext = createContext([] as MatchedRouteItem[])
+
+export function useMatchedRouteStack() {
+    return useContext(matchedRouteStackContext)
+}
+
+export const Routes = memo(({
     routes,
     children
-}: RoutesProps) {
+}: RoutesProps) => {
+    // 统一使用对象结构的路由
     const structuredRoutes = useMemo(() => {
         if (routes) {
             return routes
         }
-        const fn = (children: ReactElement[]): RouteItem[] => {
+        const fn = (children: any[]): RouteItem[] => {
             return children.flatMap(c => {
                 if (!isValidElement(c)) {
                     return []
@@ -31,83 +31,101 @@ export function Routes({
                 return {
                     ...c.props as any,
                     ...(c.props as any).children && {
-                        children: fn(Children.toArray((c.props as any).children) as ReactElement[])
+                        children: fn(Children.toArray((c.props as any).children))
                     }
                 }
             })
         }
-        return fn(Children.toArray(children) as ReactElement[])
+        return fn(Children.toArray(children))
     }, [routes, children])
 
-    const {
-        base,
-        location: {pathname},
-        params
-    } = useRouter()
+    const {routePath, params} = useRouter()
 
-    const parentRouteStack = useRouteStack()
-    const consumeDepth = useConsumeDepth()
-    const parentPath = parentRouteStack[consumeDepth]?.path || ''
+    const parentStack = useMatchedRouteStack()
+    const consumed = useConsumeDepth()
 
-    const splitPath = useMemo(() => {
-        const joinedBase = joinPath(base, parentPath)
-        if (!RegExp('^' + joinedBase).test(pathname)) {
-            // pathname开头与joinedBase不匹配，说明不在当前路由下
-            return null
+    const currentRoutePath = parentStack[consumed]?.truncatedPath ?? routePath
+
+    const matchedRouteStack = useMemo(() => {
+        if (currentRoutePath === null) {
+            // 不在当前路由下，直接返回父栈
+            return parentStack
         }
-        return pathname
-            .replace(joinedBase, '')
-            // 清除开头的'/'，避免split的结果第一个为空字符串
-            .replace(/^\/+/, '')
-            .split('/')
-    }, [pathname, base, parentPath])
-
-    const routeStack = useMemo(() => {
-        if (!splitPath) {
-            return parentRouteStack
-        }
-        const routeStack = [...parentRouteStack]
-        let splitIndex = 0
-        let routes: RouteItem[] | undefined = structuredRoutes
-        const {length} = splitPath
-        while (routes?.length && splitIndex <= length) {
-            // 遍历比长度多一次，最后一次只查找无path的子路由
-            const currentFragment = splitPath[splitIndex]
-            const route: RouteItem | undefined = routes.find(({path = ''}) => {
-                if (splitIndex === length) {
-                    return !path
+        const stack: MatchedRouteItem[] = []
+        const fn = (routes: RouteItem[], referencePath: string) => {
+            referencePath = referencePath.replace(/^\/+/, '')
+            let childPath: string | null
+            const matchedRoute = routes.find(({path = '', children}) => {
+                const startWithSlash = path[0] === '/'
+                path = clearEndSlash(path)
+                if (startWithSlash) {
+                    // 以"/"开头使用routePath匹配
+                    referencePath = routePath!
+                    // 经过clearEndSlash方法，path可能会变成空字符串，需使用"/"作为默认值
+                    path ||= '/'
                 }
-                if (path[0] === ':') {
-                    const paramName = path.slice(1)
-                    if (paramName) {
-                        params[paramName] = currentFragment
-                        return true
+
+                if (path.includes(':')) {
+                    // 路径中存在动态参数
+                    const paramKeys = path.split('/')
+                    const paramValues = referencePath.split('/')
+                    if (paramKeys.length > paramValues.length) {
+                        return false
                     }
+                    for (let i = 0, {length} = paramKeys; i < length; i++) {
+                        const key = paramKeys[i]
+                        const value = paramValues[i]
+                        if (key[0] === ':') {
+                            // 保存动态参数并替换动态路径
+                            params[key.slice(1)] = paramKeys[i] = value
+                        }
+                    }
+                    path = paramKeys.join('/')
                 }
-                path = path.replace(/^\/+/, '')
-                if (path.includes('*')) {
-                    return RegExp(`^${path.replace(/\*+/g, '.*')}$`).test(currentFragment)
+
+                const hasChildren = children?.length
+                const regular = path.includes('*')
+                let allowAllChildren = false
+                if (regular) {
+                    if (allowAllChildren = /\/\*+$/.test(path)) {
+                        // 以"/*"结尾的通配符，表示匹配所有子路由
+                        path = path.replace(/\/\*+$/, '')
+                    }
+                    path = path.replace(/\*+/g, '[^\/]+')
                 }
-                return currentFragment === path
+
+                childPath = truncatePath(referencePath, path, regular)
+                if (hasChildren || allowAllChildren) {
+                    // 有子路由，需判断能否截断
+                    return childPath !== null
+                }
+
+                // 无子路由需精准匹配
+                return regular
+                    ? RegExp(path).test(referencePath)
+                    : referencePath === path
             })
-            if (typeof route?.element !== 'undefined') {
-                routeStack.push({
-                    element: route.element,
-                    path: splitPath.slice(0, splitIndex + 1).join('/')
+            if (matchedRoute) {
+                // 有element表示配对成功，可入栈
+                typeof matchedRoute.element !== 'undefined' && stack.push({
+                    ...matchedRoute,
+                    truncatedPath: childPath!
                 })
+                matchedRoute.children?.length && fn(matchedRoute.children, childPath!)
             }
-            routes = route?.children
-            splitIndex++
         }
-        return routeStack
-    }, [parentRouteStack, structuredRoutes, splitPath])
+        fn(structuredRoutes, currentRoutePath)
+        return stack
+    }, [structuredRoutes, currentRoutePath, parentStack])
 
     return (
-        <routeStackContext.Provider value={routeStack}>
-            <Outlet />
-        </routeStackContext.Provider>
+        <matchedRouteStackContext.Provider value={matchedRouteStack}>
+            <consumeDepthContext.Provider value={-1}>
+                <Outlet />
+            </consumeDepthContext.Provider>
+        </matchedRouteStackContext.Provider>
     )
-}
+})
 
 export function Route(props: RouteProps) {
     return props.children

@@ -1,37 +1,56 @@
-import React, {lazy, Suspense} from 'react'
+import React, {lazy, memo, Suspense} from 'react'
 import {createRoot} from 'react-dom/client'
-import {Outlet, Route, Router, Routes, useParams, useQuery, useRouter} from '../src'
+import {Outlet, Router, Routes, useParams, useRouter} from '../src'
 import {RouteItem} from '..'
 
 createRoot(document.getElementById('app')!).render(<App />)
 
 const L = lazy(() => import('./lazy'))
 
+const routes: RouteItem[] = [
+    {
+        path: '/', element: <>Index+<Outlet /></>, children: [
+            {
+                path: ':page/:sub', element: <A />, children: [
+                    {path: 'b123b/*', element: <B />}
+                ]
+            }
+        ]
+    }
+]
+
+function A() {
+    console.log('params: ', useParams()) // XXX
+    return (
+        <>
+            <div>
+                A+<Outlet />
+            </div>
+
+        </>
+    )
+}
+
+function B() {
+    return (
+        <>
+            This is B
+            <div>
+                <Routes routes={[
+                    {path: 'c', element: 'C'}
+                ]} />
+            </div>
+        </>
+    )
+}
+
 function App() {
     return (
-        <Router mode="hash">
+        <Router base="/base">
             <Index />
             <div>-------------------------------------------------------------------------</div>
             <Suspense>
-                <Routes>
-                    <Route path="/" element="Index" />
-                    <Route path="/a">
-                        <Route path="sub" element="Sub" />
-                        <Route path=":page" element={<HasParams />} />
-                        <Route path="*" element="Everything" />
-                    </Route>
-                    <Route path="/b">
-                        <Route element="B" />
-                    </Route>
-                    <Route path="/c">
-                        <Route path="d" element={<L />} />
-                    </Route>
-                    <Route path="/d" element={<HasOutlet />}>
-                        <Route element="Outlet Index" />
-                        <Route path="e" element="Outlet E" />
-                        <Route path="f" element={<SubRoutes />} />
-                    </Route>
-                </Routes>
+                <Routes routes={routes} />
             </Suspense>
         </Router >
     )
@@ -70,6 +89,15 @@ function HasOutlet() {
     )
 }
 
+const Post = memo(() => {
+    return (
+        <>
+            <h3>Post in SubRoutes</h3>
+            <Outlet />
+        </>
+    )
+})
+
 const subRoutes: RouteItem[] = [
     {element: 'Home'},
     {path: '*', element: 'User'},
@@ -89,14 +117,7 @@ function SubRoutes() {
     )
 }
 
-function Post() {
-    return (
-        <>
-            <h3>Post in SubRoutes</h3>
-            <Outlet />
-        </>
-    )
-}
+
 
 function HasParams() {
     const params = useParams()

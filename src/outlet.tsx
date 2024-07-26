@@ -1,20 +1,20 @@
 import React, {createContext, useContext} from 'react'
-import {useRouteStack} from './routes'
+import {useMatchedRouteStack} from './routes'
 
-const consumeDepthContext = createContext(-1)
+export const consumeDepthContext = createContext(-1)
 
 export function useConsumeDepth() {
     return useContext(consumeDepthContext)
 }
 
 export function useOutlet() {
-    const routeStack = useRouteStack()
+    const stack = useMatchedRouteStack()
 
-    const parentConsumed = useConsumeDepth() + 1
+    const consumed = useConsumeDepth() + 1
 
     return (
-        <consumeDepthContext.Provider value={parentConsumed}>
-            {routeStack[parentConsumed]?.element}
+        <consumeDepthContext.Provider value={consumed}>
+            {stack[consumed]?.element}
         </consumeDepthContext.Provider>
     )
 }
