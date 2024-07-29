@@ -47,11 +47,11 @@ export const Routes = memo(({
     const currentRoutePath = parentStack[consumed]?.truncatedPath ?? routePath
 
     const matchedRouteStack = useMemo(() => {
-        if (currentRoutePath === null) {
-            // 不在当前路由下，直接返回父栈
-            return parentStack
-        }
         const stack: MatchedRouteItem[] = []
+        if (currentRoutePath === null) {
+            // 不在当前路由下
+            return stack
+        }
         const fn = (routes: RouteItem[], referencePath: string) => {
             referencePath = referencePath.replace(/^\/+/, '')
             let childPath: string | null
@@ -114,6 +114,7 @@ export const Routes = memo(({
                 matchedRoute.children?.length && fn(matchedRoute.children, childPath!)
             }
         }
+
         fn(structuredRoutes, currentRoutePath)
         return stack
     }, [structuredRoutes, currentRoutePath, parentStack])

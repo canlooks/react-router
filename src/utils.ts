@@ -108,7 +108,7 @@ export function truncatePath(path: string, truncate: string, regular?: boolean) 
         return null
     }
     return path.replace(
-        regular ? RegExp(truncate) : truncate,
+        regular ? RegExp('^' + truncate) : truncate,
         ''
     )
 }

@@ -46,10 +46,11 @@ export function Router({
 
     const routePath = useMemo(() => {
         let truncated = truncatePath(locationUseByMode.pathname, base)
-        return truncated === null
-            ? null
-            // 若截断后为空字符串，表示当前处于base路径，返回'/'
-            : clearEndSlash(truncated) || '/'
+        if (truncated === null) {
+            return null
+        }
+        // 执行joinPath是为了统一格式：以"/"开头，且末端无"/"
+        return joinPath(truncated)
     }, [locationUseByMode, base])
 
     const [state, setReactState] = useState(null)
