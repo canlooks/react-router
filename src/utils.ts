@@ -3,7 +3,7 @@ import {ILocation} from '..'
 /**
  * 复制location对象，用于存储在react的state中以更新组件
  */
-export function copyLocation(): ILocation {
+export function cloneLocation(): ILocation {
     const copied: any = {}
     for (const k in location) {
         const v = location[k as keyof Location]
@@ -19,9 +19,9 @@ export function copyLocation(): ILocation {
  * @param a 
  * @param b 
  */
-export function isLocationChanged(copiedLocation: ILocation) {
-    for (const k in copiedLocation) {
-        const v = copiedLocation[k as keyof ILocation]
+export function isLocationChanged(clonedLocation: ILocation) {
+    for (const k in clonedLocation) {
+        const v = clonedLocation[k as keyof ILocation]
         if (strOrNum(v) && v !== location[k as keyof ILocation]) {
             return true
         }
@@ -38,47 +38,46 @@ function strOrNum(value: any): value is string | number {
 }
 
 /**
+ * 统一path格式，以"/"开头，且结尾没有"/"
+ * @param path 
+ */
+export function standardPath(path: string) {
+    return path.replace(/\/+$/, '').replace(/^\/*/, '/')
+}
+
+/**
  * 拼接路径
  * @param paths
  */
 export function joinPath(...paths: (string | undefined)[]) {
     const fn = (prev: string, next?: string) => {
         if (!next) {
-            return prev
-                // 清除末尾的"/"; 若prev只有"/"，清除后会变成空字符串，此时返回"/"
-                ? clearEndSlash(prev) || '/'
-                // prev原本就是空字符串
-                : prev
+            return standardPath(prev)
         }
         if (next[0] === '/') {
             // "/"开头会开启新路径
-            return fn(next)
+            return standardPath(next)
         }
         if (/^\.\./.test(next)) {
-            // ".."开头,去掉prev的前一段路径，与next的".."或"../"后递归
+            // ".."开头
             return fn(
+                // 去掉prev的前一段路径
                 prev.replace(/\/[^\/]+$/, ''),
+                // 去掉next的".."或"../"
                 next.replace(/^\.\.\/?/, '')
             )
         }
         if (next[0] === '.') {
-            // "."开头，去掉"."或"./"后递归
+            // "."开头
             return fn(
                 prev,
+                // 去掉"."或"./"
                 next.replace(/^\.\/?/, '')
             )
         }
-        return `${clearEndSlash(prev)}/${clearEndSlash(next)}`
+        return standardPath(prev) + standardPath(next)
     }
     return paths.reduce(fn, '')
-}
-
-/**
- * 清除末端的"/"
- * @param str 
- */
-export function clearEndSlash(str: string) {
-    return str.replace(/\/+$/, '')
 }
 
 /**
@@ -98,17 +97,34 @@ export function navigatePath(currentPath: string, navigateTo: string) {
 }
 
 /**
- * 截断base路径
+ * 截断路径
  * @param path 
  * @param truncate 
- * @param regular 是否使用正则表达式
+ * @returns null: 不匹配，string: 截断后的路径，''：精准匹配
  */
-export function truncatePath(path: string, truncate: string, regular?: boolean) {
-    if (!RegExp('^' + truncate).test(path)) {
+export function truncatePath(path: string, truncate: string | RegExp) {
+    path = standardPath(path)
+    if (typeof truncate === 'string') {
+        truncate = standardPath(truncate)
+    } else {
+        truncate = String(truncate).slice(1, -1).replace(/^\^+/, '').replace(/\$+$/, '')
+    }
+    if (truncate === '/' || truncate === '\\/') {
+        // truncate为"/"时不进行裁剪
+        return path === '/' ? '' : path
+    }
+    if (!RegExp(`^${truncate}(/[^/]+)*$`).test(path)) {
         return null
     }
-    return path.replace(
-        regular ? RegExp('^' + truncate) : truncate,
-        ''
+    return path.replace(RegExp(`^${truncate}`), '')
+}
+
+/**
+ * 将glob通配符转换为正则表达式（仅支持*与?）
+ * @param glob 
+ */
+export function globToReg(glob: string) {
+    return RegExp(
+        glob.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]+').replace(/\?/g, '.')
     )
 }

@@ -8,13 +8,16 @@ createRoot(document.getElementById('app')!).render(<App />)
 const L = lazy(() => import('./lazy'))
 
 const routes: RouteItem[] = [
+    // {path: '', element: 'Root'},
     {
         path: '/', element: <>Index+<Outlet /></>, children: [
             {
-                path: ':page/:sub', element: <A />, children: [
-                    {path: '', element: <B />, children: [
-                        {path: 'c', element: 'CC'}
-                ]}
+                path: 'page', element: <A />, children: [
+                    {
+                        path: '', element: <B />, children: [
+                            {path: 'c', element: 'CC'}
+                        ]
+                    }
                 ]
             }
         ]
@@ -37,6 +40,7 @@ function B() {
     return (
         <>
             This is B
+            <Outlet />
             <div>
                 <Routes routes={[
                     {path: 'c', element: 'C'}
@@ -48,7 +52,7 @@ function B() {
 
 function App() {
     return (
-        <Router/*  base="/base" */>
+        <Router /* base="/base" */>
             <Index />
             <div>-------------------------------------------------------------------------</div>
             <Suspense>

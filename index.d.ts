@@ -34,7 +34,7 @@ declare namespace Router {
         mode: Mode
         base: string
         location: ILocation
-        /** The path used to match routes(excluding base {@link RouterContext.base}) */
+        /** The path used to match routes(excluding {@link RouterContext.base}) */
         routePath: string | null
 
         replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
@@ -86,9 +86,11 @@ declare namespace Router {
      */
 
     type RouteItem = {
-        path?: string
+        path?: string | RegExp
         element?: ReactNode
         children?: RouteItem[]
+        /** Whether extenading sub routes is allowed @default false */
+        extendable?: boolean
     }
 
     interface RouteProps extends Omit<RouteItem, 'children'> {

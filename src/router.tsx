@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react'
 import {createContext, useContext, useMemo} from 'react'
 import {NavigateOptions, RouterContext, RouterProps} from '..'
-import {truncatePath, copyLocation, isLocationChanged, joinPath, navigatePath, clearEndSlash} from './utils'
+import {truncatePath, cloneLocation, isLocationChanged, joinPath, navigatePath, standardPath} from './utils'
 
 const routerContext = createContext({} as RouterContext)
 
@@ -14,8 +14,7 @@ export function Router({
     base = '/',
     children
 }: RouterProps) {
-    // 执行joinPath是为了统一base格式：以"/"开头，且末端无"/"
-    base = joinPath(base)
+    base = standardPath(base)
 
     const [memoryHash, setMemoryHash] = useState(() => mode === 'hash'
         ? location.hash.replace(/^#/, '') || '/'
@@ -29,29 +28,27 @@ export function Router({
 
     const [memoryStackIndex, setMemoryStackIndex] = useState(0)
 
-    const [copiedLocation, setCopiedLocation] = useState(() => copyLocation())
+    const [clonedLocation, setClonedLocation] = useState(() => cloneLocation())
+    const syncLocation = useRef(clonedLocation)
+    syncLocation.current = clonedLocation
     const updateLocation = () => {
-        isLocationChanged(copiedLocation) && setCopiedLocation(copyLocation())
+        isLocationChanged(syncLocation.current) && setClonedLocation(cloneLocation())
     }
 
     const params = useRef({})
 
-    const locationUseByMode = useMemo(() => {
+    const locationUseInMode = useMemo(() => {
         // location改变需要清空params
         params.current = {}
         return mode === 'history'
-            ? copiedLocation
-            : new URL(memoryHash, copiedLocation.origin)
-    }, [copiedLocation, memoryHash, mode])
+            ? clonedLocation
+            : new URL(memoryHash, clonedLocation.origin)
+    }, [clonedLocation, memoryHash, mode])
 
+    // 截断base，真正用于路由匹配的路径
     const routePath = useMemo(() => {
-        let truncated = truncatePath(locationUseByMode.pathname, base)
-        if (truncated === null) {
-            return null
-        }
-        // 执行joinPath是为了统一格式：以"/"开头，且末端无"/"
-        return joinPath(truncated)
-    }, [locationUseByMode, base])
+        return truncatePath(locationUseInMode.pathname, base)
+    }, [locationUseInMode, base])
 
     const [state, setReactState] = useState(null)
     const setState = (state: any) => {
@@ -61,12 +58,9 @@ export function Router({
 
     useEffect(() => {
         if (mode === 'history') {
-            const popState = () => {
-                updateLocation()
-            }
-            addEventListener('popstate', popState)
+            addEventListener('popstate', updateLocation)
             return () => {
-                removeEventListener('popstate', popState)
+                removeEventListener('popstate', updateLocation)
             }
         }
     }, [mode])
@@ -95,9 +89,8 @@ export function Router({
             if (mode === 'history') {
                 history.scrollRestoration = options?.scrollRestore === false ? 'manual' : 'auto'
                 const destination = a[0] === '/'
-                    // "/"开头拼接base
+                    // "/"开头需拼接base
                     ? joinPath(base, a.slice(1))
-                    // 非"/"开头直接交给History API处理
                     : a
                 replace
                     ? history.replaceState(state, '', destination)
@@ -152,10 +145,10 @@ export function Router({
     return (
         <routerContext.Provider value={
             useMemo(() => ({
-                mode, base, location: locationUseByMode, routePath, state, params: params.current,
+                mode, base, location: locationUseInMode, routePath, state, params: params.current,
                 replace, navigate, back, forward, setState
             }), [
-                mode, base, locationUseByMode, state, params.current
+                mode, base, locationUseInMode, state, params.current
             ])
         }>
             {children}

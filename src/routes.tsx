@@ -1,8 +1,8 @@
 import React, {Children, createContext, isValidElement, memo, useContext, useMemo} from 'react'
 import {RouteItem, RouteProps, RoutesProps} from '..'
 import {useRouter} from './router'
-import {truncatePath, clearEndSlash} from './utils'
 import {consumeDepthContext, Outlet, useConsumeDepth} from './outlet'
+import {globToReg, truncatePath} from './utils'
 
 interface MatchedRouteItem extends RouteItem {
     truncatedPath: string
@@ -53,68 +53,56 @@ export const Routes = memo(({
             return stack
         }
         const fn = (routes: RouteItem[], referencePath: string) => {
-            referencePath = referencePath.replace(/^\/+/, '')
-            let childPath: string | null
-            const matchedRoute = routes.find(({path = '', children}) => {
-                const startWithSlash = path[0] === '/'
-                path = clearEndSlash(path)
-                if (startWithSlash) {
-                    // 以"/"开头使用routePath匹配
+            let subPath: string | null
+            const matchedRoute = routes.find(({path = '', children, extendable}) => {
+                if (String(path)[0] === '/') {
+                    // 以"/"开头使用invokePath匹配
                     referencePath = routePath!
-                    // 经过clearEndSlash方法，path可能会变成空字符串，需使用"/"作为默认值
-                    path ||= '/'
                 }
 
-                if (path.includes(':')) {
-                    // 路径中存在动态参数
-                    const paramKeys = path.split('/')
-                    const paramValues = referencePath.split('/')
-                    if (paramKeys.length > paramValues.length) {
-                        return false
-                    }
-                    for (let i = 0, {length} = paramKeys; i < length; i++) {
-                        const key = paramKeys[i]
-                        const value = paramValues[i]
-                        if (key[0] === ':') {
-                            // 保存动态参数并替换动态路径
-                            params[key.slice(1)] = paramKeys[i] = value
+                let endWithStar = false
+                if (typeof path === 'string') {
+                    if (path.includes(':')) {
+                        // 路径中存在动态参数
+                        const paramKeys = path.split('/')
+                        const paramValues = referencePath.split('/')
+                        if (paramKeys.length > paramValues.length) {
+                            return null
                         }
+                        for (let i = 0, {length} = paramKeys; i < length; i++) {
+                            const key = paramKeys[i]
+                            const value = paramValues[i]
+                            if (key[0] === ':') {
+                                // 保存动态参数并替换动态路径
+                                params[key.slice(1)] = paramKeys[i] = value
+                            }
+                        }
+                        // 得到替换后的路径
+                        path = paramKeys.join('/')
+                    } else if (/(\*|\?)+/.test(path)) {
+                        // 路径中存在通配符
+                        endWithStar = /\/\*+$/.test(path)
+                        path = globToReg(path)
                     }
-                    path = paramKeys.join('/')
                 }
 
-                const hasChildren = children?.length
-                const regular = path.includes('*')
-                let allowAllChildren = false
-                if (regular) {
-                    if (allowAllChildren = /\/\*+$/.test(path)) {
-                        // 以"/*"结尾的通配符，表示匹配所有子路由
-                        path = path.replace(/\/\*+$/, '')
-                    }
-                    path = path.replace(/\*+/g, '[^\/]+')
+                subPath = truncatePath(referencePath, path)
+                if (children?.length || extendable || endWithStar) {
+                    // 有子路由，或可扩展的路由，或以"/*"结尾的路由
+                    return subPath !== null
                 }
-
-                childPath = truncatePath(referencePath, path, regular)
-                if (hasChildren || allowAllChildren) {
-                    // 有子路由，需判断能否截断
-                    return childPath !== null
-                }
-
                 // 无子路由需精准匹配
-                return regular
-                    ? RegExp(path).test(referencePath)
-                    : referencePath === path
+                return subPath === ''
             })
             if (matchedRoute) {
                 // 有element表示配对成功，可入栈
                 typeof matchedRoute.element !== 'undefined' && stack.push({
                     ...matchedRoute,
-                    truncatedPath: childPath!
+                    truncatedPath: subPath!
                 })
-                matchedRoute.children?.length && fn(matchedRoute.children, childPath!)
+                matchedRoute.children?.length && fn(matchedRoute.children, subPath!)
             }
         }
-
         fn(structuredRoutes, currentRoutePath)
         return stack
     }, [structuredRoutes, currentRoutePath, parentStack])
