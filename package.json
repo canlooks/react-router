@@ -2,7 +2,7 @@
   "name": "@canlooks/react-router",
   "version": "0.0.1",
   "author": "C.CanLiang <canlooks@gmail.com>",
-  "description": "A very simple and lightweight react tool for responding data and managing state.",
+  "description": "React router manager",
   "keywords": [
     "react",
     "router",
@@ -23,7 +23,8 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "node build.js",
+    "clean": "canlooks-compiler clean",
+    "build": "canlooks-compiler",
     "test": "vite -c test/vite.config.mts",
     "test:unit": "ts-node test/unitTest.ts"
   },
@@ -31,6 +32,7 @@
     "tslib": "^2.6.3"
   },
   "devDependencies": {
+    "@canlooks/compiler": "^0.0.6",
     "@types/node": "^20.14.10",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

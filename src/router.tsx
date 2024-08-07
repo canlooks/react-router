@@ -35,7 +35,7 @@ export function Router({
         isLocationChanged(syncLocation.current) && setClonedLocation(cloneLocation())
     }
 
-    const params = useRef({})
+    const params = useRef<Record<string, string>>({})
 
     const locationUseInMode = useMemo(() => {
         // location改变需要清空params

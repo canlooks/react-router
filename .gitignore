@@ -1,7 +1,8 @@
 # compiled output
 node_modules
 /dist
-/build
+
+tsconfig.*.json
 
 # local env files
 .env.local

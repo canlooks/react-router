@@ -40,9 +40,10 @@ function strOrNum(value: any): value is string | number {
 /**
  * 统一path格式，以"/"开头，且结尾没有"/"
  * @param path 
+ * @param startWithSlash 是否以"/"开头 @default true
  */
-export function standardPath(path: string) {
-    return path.replace(/\/+$/, '').replace(/^\/*/, '/')
+export function standardPath(path: string, startWithSlash = true) {
+    return path.replace(/\/+$/, '').replace(/^\/*/, startWithSlash ? '/' : '')
 }
 
 /**
@@ -117,6 +118,30 @@ export function truncatePath(path: string, truncate: string | RegExp) {
         return null
     }
     return path.replace(RegExp(`^${truncate}`), '')
+}
+
+/**
+ * 读取动态路径参数
+ * @param params 
+ * @param routePath 
+ * @param referencePath 
+ * @returns 替换后的路径
+ */
+export function getPathParams(params: Record<string, string>, routePath: string, referencePath: string) {
+    const paramKeys = standardPath(routePath, false).split('/')
+    const paramValues = standardPath(referencePath, false).split('/')
+    if (paramKeys.length > paramValues.length) {
+        return null
+    }
+    for (let i = 0, {length} = paramKeys; i < length; i++) {
+        const key = paramKeys[i]
+        const value = paramValues[i]
+        if (key[0] === ':') {
+            // 保存动态参数并替换动态路径
+            params[key.slice(1)] = paramKeys[i] = value
+        }
+    }
+    return paramKeys.join('/')
 }
 
 /**

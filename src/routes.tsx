@@ -2,7 +2,7 @@ import React, {Children, createContext, isValidElement, memo, useContext, useMem
 import {RouteItem, RouteProps, RoutesProps} from '..'
 import {useRouter} from './router'
 import {consumeDepthContext, Outlet, useConsumeDepth} from './outlet'
-import {globToReg, truncatePath} from './utils'
+import {getPathParams, globToReg, truncatePath} from './utils'
 
 interface MatchedRouteItem extends RouteItem {
     truncatedPath: string
@@ -64,21 +64,12 @@ export const Routes = memo(({
                 if (typeof path === 'string') {
                     if (path.includes(':')) {
                         // 路径中存在动态参数
-                        const paramKeys = path.split('/')
-                        const paramValues = referencePath.split('/')
-                        if (paramKeys.length > paramValues.length) {
-                            return null
-                        }
-                        for (let i = 0, {length} = paramKeys; i < length; i++) {
-                            const key = paramKeys[i]
-                            const value = paramValues[i]
-                            if (key[0] === ':') {
-                                // 保存动态参数并替换动态路径
-                                params[key.slice(1)] = paramKeys[i] = value
-                            }
+                        const replacedPath = getPathParams(params, path, referencePath)
+                        if (replacedPath === null) {
+                            return false
                         }
                         // 得到替换后的路径
-                        path = paramKeys.join('/')
+                        path = replacedPath
                     } else if (/(\*|\?)+/.test(path)) {
                         // 路径中存在通配符
                         endWithStar = /\/\*+$/.test(path)
@@ -94,6 +85,7 @@ export const Routes = memo(({
                 // 无子路由需精准匹配
                 return subPath === ''
             })
+            
             if (matchedRoute) {
                 // 有element表示配对成功，可入栈
                 typeof matchedRoute.element !== 'undefined' && stack.push({

@@ -1,22 +1,37 @@
-const childProcess = require('child_process')
+const {promises: fs} = require('fs')
 const path = require('path')
 
-async function _() {
-    await exec('shx rm -rf dist')
-    await Promise.all([
-        exec('tsc -p tsconfig.esm.json'),
-        exec('tsc -p tsconfig.cjs.json')
+function generateTsconfig(directory = '') {
+    const fn = (type) => fs.writeFile(
+        path.resolve(directory, `tsconfig.${type}.json`),
+        directory
+            // 子目录的tsconfig
+            ? `
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "${type === 'cjs' ? 'CommonJS' : 'ESNext'}"
+    },
+    "include": [
+        "**/*${type === 'cjs' ? '.ts' : '.mts'}"
+    ]
+}
+            `
+            // 根目录的tsconfig
+            : `
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "${type === 'cjs' ? 'CommonJS' : 'ESNext'}",
+        "outDir": "dist/${type}"
+    }
+}
+        `
+    )
+    return Promise.all([
+        fn('cjs'),
+        fn('esm')
     ])
-    console.log('done.')
 }
 
-function exec(command) {
-    return new Promise((resolve, reject) => {
-        childProcess.exec(path.join(__dirname, 'node_modules/.bin', command), (err, stdout) => {
-            stdout && console.error(stdout)
-            err ? reject(err) : resolve(stdout)
-        })
-    })
-}
-
-_()
+generateTsconfig()

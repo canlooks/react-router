@@ -12,9 +12,9 @@ const routes: RouteItem[] = [
     {
         path: '/', element: <>Index+<Outlet /></>, children: [
             {
-                path: 'page', element: <A />, children: [
+                path: ':page/:type', element: <A />, children: [
                     {
-                        path: '', element: <B />, children: [
+                        path: 'b', element: <B />, children: [
                             {path: 'c', element: 'CC'}
                         ]
                     }
@@ -43,7 +43,7 @@ function B() {
             <Outlet />
             <div>
                 <Routes routes={[
-                    {path: 'c', element: 'C'}
+                    {path: 'sub', element: 'SUB'}
                 ]} />
             </div>
         </>
