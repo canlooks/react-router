@@ -111,7 +111,7 @@ export function truncatePath(path: string, truncate: string | RegExp) {
         truncate = String(truncate).slice(1, -1).replace(/^\^+/, '').replace(/\$+$/, '')
     }
     if (truncate === '/' || truncate === '\\/') {
-        // truncate为"/"时不进行裁剪
+        // truncate为"/"时不裁剪
         return path === '/' ? '' : path
     }
     if (!RegExp(`^${truncate}(/[^/]+)*$`).test(path)) {

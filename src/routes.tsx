@@ -56,7 +56,7 @@ export const Routes = memo(({
             let subPath: string | null
             const matchedRoute = routes.find(({path = '', children, extendable}) => {
                 if (String(path)[0] === '/') {
-                    // 以"/"开头使用invokePath匹配
+                    // 以"/"开头使用routePath匹配
                     referencePath = routePath!
                 }
 
