@@ -1,6 +1,6 @@
 {
   "name": "@canlooks/react-router",
-  "version": "0.0.1",
+  "version": "0.0.8",
   "author": "C.CanLiang <canlooks@gmail.com>",
   "description": "React router manager",
   "keywords": [
@@ -8,6 +8,16 @@
     "router",
     "react-router"
   ],
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./index.d.ts"
+    }
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
@@ -32,15 +42,15 @@
     "tslib": "^2.6.3"
   },
   "devDependencies": {
-    "@canlooks/compiler": "^0.0.6",
-    "@types/node": "^20.14.10",
+    "@canlooks/compiler": "^0.0.10",
+    "@types/node": "^22.3.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "shx": "^0.3.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.3",
-    "vite": "^5.3.3"
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0"
   }
 }

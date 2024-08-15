@@ -8,10 +8,10 @@ interface MatchedRouteItem extends RouteItem {
     truncatedPath: string
 }
 
-const matchedRouteStackContext = createContext([] as MatchedRouteItem[])
+const routeStackContext = createContext([] as MatchedRouteItem[])
 
-export function useMatchedRouteStack() {
-    return useContext(matchedRouteStackContext)
+export function useRouteStack() {
+    return useContext(routeStackContext)
 }
 
 export const Routes = memo(({
@@ -41,12 +41,12 @@ export const Routes = memo(({
 
     const {routePath, params} = useRouter()
 
-    const parentStack = useMatchedRouteStack()
+    const parentStack = useRouteStack()
     const consumed = useConsumeDepth()
 
     const currentRoutePath = parentStack[consumed]?.truncatedPath ?? routePath
 
-    const matchedRouteStack = useMemo(() => {
+    const routeStack = useMemo(() => {
         const stack: MatchedRouteItem[] = []
         if (currentRoutePath === null) {
             // 不在当前路由下
@@ -85,7 +85,7 @@ export const Routes = memo(({
                 // 无子路由需精准匹配
                 return subPath === ''
             })
-            
+
             if (matchedRoute) {
                 // 有element表示配对成功，可入栈
                 typeof matchedRoute.element !== 'undefined' && stack.push({
@@ -100,11 +100,11 @@ export const Routes = memo(({
     }, [structuredRoutes, currentRoutePath, parentStack])
 
     return (
-        <matchedRouteStackContext.Provider value={matchedRouteStack}>
+        <routeStackContext.Provider value={routeStack}>
             <consumeDepthContext.Provider value={-1}>
                 <Outlet />
             </consumeDepthContext.Provider>
-        </matchedRouteStackContext.Provider>
+        </routeStackContext.Provider>
     )
 })
 

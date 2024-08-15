@@ -43,7 +43,7 @@ function strOrNum(value: any): value is string | number {
  * @param startWithSlash 是否以"/"开头 @default true
  */
 export function standardPath(path: string, startWithSlash = true) {
-    return path.replace(/\/+$/, '').replace(/^\/*/, startWithSlash ? '/' : '')
+    return path.replace(/(\/|\\\/)+$/, '').replace(/^(\/|\\\/)*/, startWithSlash ? '/' : '')
 }
 
 /**
@@ -76,7 +76,10 @@ export function joinPath(...paths: (string | undefined)[]) {
                 next.replace(/^\.\/?/, '')
             )
         }
-        return standardPath(prev) + standardPath(next)
+        prev = standardPath(prev)
+        return prev === '/'
+            ? standardPath(next)
+            : prev + standardPath(next)
     }
     return paths.reduce(fn, '')
 }
@@ -109,12 +112,14 @@ export function truncatePath(path: string, truncate: string | RegExp) {
         truncate = standardPath(truncate)
     } else {
         truncate = String(truncate).slice(1, -1).replace(/^\^+/, '').replace(/\$+$/, '')
+        truncate = standardPath(truncate)
     }
     if (truncate === '/' || truncate === '\\/') {
         // truncate为"/"时不裁剪
         return path === '/' ? '' : path
     }
     if (!RegExp(`^${truncate}(/[^/]+)*$`).test(path)) {
+
         return null
     }
     return path.replace(RegExp(`^${truncate}`), '')

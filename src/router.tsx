@@ -92,6 +92,7 @@ export function Router({
                     // "/"开头需拼接base
                     ? joinPath(base, a.slice(1))
                     : a
+                console.log(95, destination) // XXX
                 replace
                     ? history.replaceState(state, '', destination)
                     : history.pushState(state, '', destination)

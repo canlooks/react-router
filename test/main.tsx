@@ -1,6 +1,6 @@
 import React, {lazy, memo, Suspense} from 'react'
 import {createRoot} from 'react-dom/client'
-import {Outlet, Router, Routes, useParams, useRouter} from '../src'
+import {Outlet, Router, Routes, useCurrentRoute, useParams, useRouter} from '../src'
 import {RouteItem} from '..'
 
 createRoot(document.getElementById('app')!).render(<App />)
@@ -12,13 +12,12 @@ const routes: RouteItem[] = [
     {
         path: '/', element: <>Index+<Outlet /></>, children: [
             {
-                path: ':page/:type', element: <A />, children: [
-                    {
-                        path: 'b', element: <B />, children: [
-                            {path: 'c', element: 'CC'}
-                        ]
-                    }
-                ]
+                path: 'ethernets',
+                element: <A />,
+            },
+            {
+                path: '/*',
+                element: 'this is *'
             }
         ]
     }
@@ -26,6 +25,9 @@ const routes: RouteItem[] = [
 
 function A() {
     console.log('params: ', useParams()) // XXX
+
+    console.log('current route: ', useCurrentRoute()) // XXX
+
     return (
         <>
             <div>

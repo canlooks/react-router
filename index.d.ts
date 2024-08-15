@@ -85,7 +85,7 @@ declare namespace Router {
      * Route
      */
 
-    type RouteItem = {
+    interface RouteItem extends Record<any, any> {
         path?: string | RegExp
         element?: ReactNode
         children?: RouteItem[]
@@ -104,9 +104,12 @@ declare namespace Router {
      * outlet
      */
 
-    function useOutlet(): ReactElement
+    function useOutlet(): ReactElement | null
 
     function Outlet(): ReactElement
+
+    /** get current mathced route item {@link RouteItem} */
+    function useCurrentRoute(): RouteItem | null
 
     /**
      * ---------------------------------------------------------------
@@ -123,6 +126,13 @@ declare namespace Router {
     function Navigate(props: NavigateProps): ReactElement
 
     type RedirectProps = Omit<NavigateProps, 'replace'>
+
+    /**
+     * @alias {@link Navigate} but with replace
+     * @param props 
+     */
+    function Redirect(props: RedirectProps): ReactElement
+
 
     /**
      * ---------------------------------------------------------------

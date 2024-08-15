@@ -1,4 +1,4 @@
-import React, {memo} from 'react'
+import React, {memo, useEffect} from 'react'
 import {NavigateProps, RedirectProps} from '..'
 import {useRouter} from './router'
 
@@ -9,9 +9,13 @@ export function useNavigate() {
 
 export const Navigate = memo(({to, delta, ...props}: NavigateProps) => {
     const navigate = useNavigate()
-    typeof delta === 'number'
-        ? navigate(delta)
-        : typeof to !== 'undefined' && navigate(to, props)
+
+    useEffect(() => {
+        typeof delta === 'number'
+            ? navigate(delta)
+            : typeof to !== 'undefined' && navigate(to, props)
+    }, [to, delta, Object.values(props)])
+
     return null
 })
 
