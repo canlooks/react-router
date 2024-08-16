@@ -1,6 +1,6 @@
 import React, {lazy, memo, Suspense} from 'react'
 import {createRoot} from 'react-dom/client'
-import {Outlet, Router, Routes, useCurrentRoute, useParams, useRouter} from '../src'
+import {Outlet, Router, Routes, useCurrentBase, useCurrentRoute, useParams, useRouter} from '../src'
 import {RouteItem} from '..'
 
 createRoot(document.getElementById('app')!).render(<App />)
@@ -14,9 +14,10 @@ const routes: RouteItem[] = [
             {
                 path: 'ethernets',
                 element: <A />,
+                extendable: true
             },
             {
-                path: '/*',
+                path: '*',
                 element: 'this is *'
             }
         ]
@@ -27,6 +28,8 @@ function A() {
     console.log('params: ', useParams()) // XXX
 
     console.log('current route: ', useCurrentRoute()) // XXX
+
+    console.log('current base', useCurrentBase()) // XXX
 
     return (
         <>

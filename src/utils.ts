@@ -1,7 +1,7 @@
 import {ILocation} from '..'
 
 /**
- * 复制location对象，用于存储在react的state中以更新组件
+ * @private 复制location对象，用于存储在react的state中以更新组件
  */
 export function cloneLocation(): ILocation {
     const copied: any = {}
@@ -15,7 +15,7 @@ export function cloneLocation(): ILocation {
 }
 
 /**
- * 浅比较，判断location是否发生改变
+ * @private 浅比较，判断location是否发生改变
  * @param a 
  * @param b 
  */
@@ -63,7 +63,7 @@ export function joinPath(...paths: (string | undefined)[]) {
             // ".."开头
             return fn(
                 // 去掉prev的前一段路径
-                prev.replace(/\/[^\/]+$/, ''),
+                prev.replace(/\/[^/]+$/, ''),
                 // 去掉next的".."或"../"
                 next.replace(/^\.\.\/?/, '')
             )
@@ -95,7 +95,7 @@ export function navigatePath(currentPath: string, navigateTo: string) {
     }
     return joinPath(
         // 清除currentPath的最后一段，再进行拼接
-        currentPath.replace(/\/[^\/]+$/, ''),
+        currentPath.replace(/\/[^/]+$/, ''),
         navigateTo
     )
 }
@@ -119,20 +119,19 @@ export function truncatePath(path: string, truncate: string | RegExp) {
         return path === '/' ? '' : path
     }
     if (!RegExp(`^${truncate}(/[^/]+)*$`).test(path)) {
-
         return null
     }
     return path.replace(RegExp(`^${truncate}`), '')
 }
 
 /**
- * 读取动态路径参数
+ * @private 内部使用，读取动态路径参数，并得到替换后的路径
  * @param params 
  * @param routePath 
  * @param referencePath 
  * @returns 替换后的路径
  */
-export function getPathParams(params: Record<string, string>, routePath: string, referencePath: string) {
+export function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string) {
     const paramKeys = standardPath(routePath, false).split('/')
     const paramValues = standardPath(referencePath, false).split('/')
     if (paramKeys.length > paramValues.length) {
@@ -150,11 +149,32 @@ export function getPathParams(params: Record<string, string>, routePath: string,
 }
 
 /**
+ * 读取动态路径参数
+ * @param routePath 
+ * @param referencePath 
+ * @returns 
+ */
+export function getPathParams(routePath: string, referencePath: string) {
+    const params: Record<string, string> = {}
+    insertPathParams(params, routePath, referencePath)
+    return params
+}
+
+/**
  * 将glob通配符转换为正则表达式（仅支持*与?）
  * @param glob 
  */
 export function globToReg(glob: string) {
-    return RegExp(
-        glob.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]+').replace(/\?/g, '.')
-    )
+    return glob === '*'
+        // 只有一个"*"时，匹配所有
+        ? RegExp('.*')
+        : RegExp(
+            glob
+                // "**"匹配所有
+                .replace(/\*\*/g, '.*')
+                // "*"匹配任意多个非"/"字符
+                .replace(/[^\.]\*/g, $1 => $1[0] + '[^/]+')
+                // "?"匹配任意单个字符
+                .replace(/\?/g, '.')
+        )
 }

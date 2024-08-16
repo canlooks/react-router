@@ -80,6 +80,8 @@ declare namespace Router {
 
     function Routes(props: RoutesProps): ReactElement
 
+    function useRouteStack(): MatchedRouteItem[]
+
     /**
      * ---------------------------------------------------------------
      * Route
@@ -91,6 +93,10 @@ declare namespace Router {
         children?: RouteItem[]
         /** Whether extenading sub routes is allowed @default false */
         extendable?: boolean
+    }
+
+    interface MatchedRouteItem extends RouteItem {
+        truncatedPath: string
     }
 
     interface RouteProps extends Omit<RouteItem, 'children'> {
@@ -108,8 +114,11 @@ declare namespace Router {
 
     function Outlet(): ReactElement
 
-    /** get current mathced route item {@link RouteItem} */
-    function useCurrentRoute(): RouteItem | null
+    /** get current matched route item {@link MatchedRouteItem} */
+    function useCurrentRoute(): MatchedRouteItem | null
+
+    /** get route path from {@link RouterProps.base} to current matched */
+    function useCurrentBase(): string | null
 
     /**
      * ---------------------------------------------------------------
@@ -142,6 +151,47 @@ declare namespace Router {
     interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
         children?: ReactNode
     }
+
+    /**
+     * ---------------------------------------------------------------
+     * utils
+     */
+
+    /**
+     * 统一path格式，以"/"开头，且结尾没有"/"
+     * @param path 
+     * @param startWithSlash 是否以"/"开头 @default true
+     */
+    export function standardPath(path: string, startWithSlash?: boolean): string
+
+    /**
+     * 拼接路径
+     * @param paths
+     */
+    function joinPath(...paths: (string | undefined)[]): string
+
+    /**
+     * 获得跳转后的新路径，用于非history模式的路由跳转
+     * @param currentPath 
+     * @param navigateTo 
+     */
+    function navigatePath(currentPath: string, navigateTo: string): string
+
+    /**
+     * 截断路径
+     * @param path 
+     * @param truncate 
+     * @returns null: 不匹配，string: 截断后的路径，''：精准匹配
+     */
+    function truncatePath(path: string, truncate: string | RegExp): string | null
+
+    /**
+     * 读取动态路径参数
+     * @param routePath 
+     * @param referencePath 
+     * @returns 
+     */
+    function getPathParams(routePath: string, referencePath: string): Record<string, string>
 }
 
 export = Router

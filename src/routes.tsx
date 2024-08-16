@@ -1,12 +1,8 @@
 import React, {Children, createContext, isValidElement, memo, useContext, useMemo} from 'react'
-import {RouteItem, RouteProps, RoutesProps} from '..'
+import {MatchedRouteItem, RouteItem, RouteProps, RoutesProps} from '..'
 import {useRouter} from './router'
 import {consumeDepthContext, Outlet, useConsumeDepth} from './outlet'
-import {getPathParams, globToReg, truncatePath} from './utils'
-
-interface MatchedRouteItem extends RouteItem {
-    truncatedPath: string
-}
+import {insertPathParams, globToReg, truncatePath} from './utils'
 
 const routeStackContext = createContext([] as MatchedRouteItem[])
 
@@ -64,7 +60,7 @@ export const Routes = memo(({
                 if (typeof path === 'string') {
                     if (path.includes(':')) {
                         // 路径中存在动态参数
-                        const replacedPath = getPathParams(params, path, referencePath)
+                        const replacedPath = insertPathParams(params, path, referencePath)
                         if (replacedPath === null) {
                             return false
                         }
