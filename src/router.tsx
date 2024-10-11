@@ -63,6 +63,7 @@ export function Router({
                 removeEventListener('popstate', updateLocation)
             }
         }
+        return
     }, [mode])
 
     /**
