@@ -24,7 +24,7 @@ const routes: RouteItem[] = [
 function App() {
     return (
         <Router>
-            <Routes routes={routes}>
+            <Routes routes={routes}/>
         </Router>
     )
 }
@@ -52,18 +52,18 @@ function App() {
 
 ### Router
 
-- mode "history" | "hash" | "memory", default "history"
-- base string
+- mode `"history" | "hash" | "memory"`, default "history"
+- base `string`
 
 ### Routes
 
-- routes Route[]
+- routes `Route[]`
 
 ### Route
 
-- path string
-- element ReactNode
-- children Route[]
+- path `string`
+- element `ReactNode`
+- children `Route[]`
 
 ### Outlet
 
@@ -82,8 +82,35 @@ function User() {
 
 ### useQuery()
 
-Get search params from the URL. It will returns a `URLSearchParams` object.
+Get search params from the URL. It will return a `URLSearchParams` object.
 
 ### useParams()
 
 Get dynamic path from the URL. Such as `:id` in the path `/user/:id`.
+
+### useRouter()
+
+return `RouterContext`
+
+```tsx
+type RouterContext = {
+    mode: Mode
+    base: string
+    location: ILocation
+    /** The path used to match routes(truncated by {@link base}) */
+    pathname: string | null
+
+    replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
+
+    navigate(to: To, options?: NavigateOptions): void
+    navigate(delta: number): void
+
+    back(): void
+    forward(): void
+
+    state: any
+    setState: Dispatch<SetStateAction<any>>
+
+    params: Record<string, string>
+}
+```

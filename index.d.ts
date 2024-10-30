@@ -1,4 +1,4 @@
-import {Dispatch, ReactElement, ReactNode, SetStateAction} from 'react'
+import {Dispatch, MutableRefObject, ReactElement, ReactNode, SetStateAction} from 'react'
 
 declare namespace Router {
     /**
@@ -6,7 +6,6 @@ declare namespace Router {
      * Router
      */
 
-    /** @default 'history' */
     type Mode = 'history' | 'hash' | 'memory'
 
     type To = string | URL
@@ -34,8 +33,8 @@ declare namespace Router {
         mode: Mode
         base: string
         location: ILocation
-        /** The path used to match routes(excluding {@link RouterContext.base}) */
-        routePath: string | null
+        /** The path used to match routes(truncated by {@link base}) */
+        pathname: string | null
 
         replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
 
@@ -52,6 +51,7 @@ declare namespace Router {
     }
 
     type RouterProps = {
+        /** @default 'history' */
         mode?: Mode
         /** @default '/' */
         base?: string
@@ -82,6 +82,11 @@ declare namespace Router {
 
     function useRouteStack(): MatchedRouteItem[]
 
+    function useRouteStackIndex(): number
+
+    /** Get current matched route item. */
+    function useCurrentRoute(): MatchedRouteItem | null
+
     /**
      * ---------------------------------------------------------------
      * Route
@@ -91,12 +96,12 @@ declare namespace Router {
         path?: string | RegExp
         element?: ReactNode
         children?: RouteItem[]
-        /** Whether extenading sub routes is allowed @default false */
+        /** Whether extending sub routes is allowed {@default false} */
         extendable?: boolean
     }
 
     interface MatchedRouteItem extends RouteItem {
-        truncatedPath: string
+        subPath: string
     }
 
     interface RouteProps extends Omit<RouteItem, 'children'> {
@@ -114,10 +119,7 @@ declare namespace Router {
 
     function Outlet(): ReactElement
 
-    /** get current matched route item {@link MatchedRouteItem} */
-    function useCurrentRoute(): MatchedRouteItem | null
-
-    /** get route path from {@link RouterProps.base} to current matched */
+    /** Get route path from {@link RouterProps.base} to current matched. */
     function useCurrentBase(): string | null
 
     /**
@@ -138,7 +140,7 @@ declare namespace Router {
 
     /**
      * @alias {@link Navigate} but with replace
-     * @param props 
+     * @param props
      */
     function Redirect(props: RedirectProps): ReactElement
 
@@ -158,40 +160,72 @@ declare namespace Router {
      */
 
     /**
-     * 统一path格式，以"/"开头，且结尾没有"/"
-     * @param path 
-     * @param startWithSlash 是否以"/"开头 @default true
+     * 将某个值使用ref同步，主要用于对付组件的闭包问题
+     * @param value
      */
-    export function standardPath(path: string, startWithSlash?: boolean): string
+    function useSync<T>(value: T): MutableRefObject<T>
 
     /**
-     * 拼接路径
-     * @param paths
+     * 复制location对象，用于存储在react的state中以更新组件
      */
-    function joinPath(...paths: (string | undefined)[]): string
+    function cloneLocation(): ILocation
+
+    /**
+     * 判断值是否为字符串或数字
+     * @param value
+     */
+    function strOrNum(value: any): value is string | number
+
+    /**
+     * 浅比较，判断location是否发生改变
+     */
+    function isLocationChanged(clonedLocation: ILocation): boolean
+
+    /**
+     * 全部统一使用"/"
+     * @param path
+     */
+    function unifySlash(path: string): string
+
+    /**
+     * 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
+     * @param path
+     * @param endWithSlash {@default true} 是否以"/"开头
+     */
+    function unifyPath(path: string, endWithSlash?: boolean): string
 
     /**
      * 获得跳转后的新路径，用于非history模式的路由跳转
-     * @param currentPath 
-     * @param navigateTo 
+     * @param currentPath
+     * @param navigateTo
+     * @param base
      */
-    function navigatePath(currentPath: string, navigateTo: string): string
+    function navigatePath(currentPath: string, navigateTo: string | URL, base: string): string
 
     /**
-     * 截断路径
-     * @param path 
-     * @param truncate 
-     * @returns null: 不匹配，string: 截断后的路径，''：精准匹配
+     * 从前端截断路径
+     * @param fullPath
+     * @param truncation
+     * @returns {string} 返回截断后的子路径
+     * @returns {null} 如果路径不匹配，返回null
      */
-    function truncatePath(path: string, truncate: string | RegExp): string | null
+    function truncatePath(fullPath: string, truncation: string | RegExp | undefined): string | null
 
     /**
-     * 读取动态路径参数
-     * @param routePath 
-     * @param referencePath 
-     * @returns 
+     * 读取动态路径参数，并得到替换后的路径
+     * @param params
+     * @param routePath {@link RouteItem.path}
+     * @param referencePath
+     * @returns {string} 替换后的路径
+     * @returns {null} 路径不匹配会得到null
      */
-    function getPathParams(routePath: string, referencePath: string): Record<string, string>
+    function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null
+
+    /**
+     * 将glob通配符转换为正则表达式（支持*与?）
+     * @param glob
+     */
+    function globToReg(glob: string): RegExp
 }
 
 export = Router

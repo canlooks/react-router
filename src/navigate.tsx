@@ -1,4 +1,4 @@
-import React, {memo, useEffect} from 'react'
+import {memo, useEffect} from 'react'
 import {NavigateProps, RedirectProps} from '..'
 import {useRouter} from './router'
 

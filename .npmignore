@@ -3,7 +3,7 @@ node_modules
 /src
 /test
 
-tsconfig.*.json
+package-lock.json
 tsconfig.json
 
 # local env files

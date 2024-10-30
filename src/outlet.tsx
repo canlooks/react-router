@@ -1,42 +1,26 @@
-import React, {createContext, useContext} from 'react'
-import {useRouteStack} from './routes'
+import {routeStackIndexContext, useCurrentRoute, useRouteStack, useRouteStackIndex} from './routes'
 import {useRouter} from './router'
-import {MatchedRouteItem} from '..'
-
-export const consumeDepthContext = createContext(-1)
-
-export function useConsumeDepth() {
-    return useContext(consumeDepthContext)
-}
-
-export function useCurrentRoute(): MatchedRouteItem | null {
-    const stack = useRouteStack()
-    const consumed = useConsumeDepth()
-    return stack[consumed] || null
-}
-
-export function useCurrentBase() {
-    const currentRoute = useCurrentRoute()
-    const {routePath} = useRouter()
-    if (currentRoute?.truncatedPath && routePath !== null) {
-        return routePath.replace(RegExp(`${currentRoute.truncatedPath}$`), '')
-    }
-    return routePath
-}
 
 export function useOutlet() {
     const stack = useRouteStack()
-    const consumed = useConsumeDepth() + 1
-    const element = stack[consumed]?.element
-
+    const stackIndex = useRouteStackIndex() + 1
+    const element = stack[stackIndex]?.element
     return element
-        ? <consumeDepthContext.Provider value={consumed}>
+        ? <routeStackIndexContext.Provider value={stackIndex}>
             {element}
-        </consumeDepthContext.Provider>
-        : null
-
+        </routeStackIndexContext.Provider>
+            : null
 }
 
 export function Outlet() {
     return useOutlet()
+}
+
+export function useCurrentBase() {
+    const {pathname} = useRouter()
+    const currentRoute = useCurrentRoute()
+    if (currentRoute?.subPath && pathname !== null) {
+        return pathname.replace(RegExp(`${currentRoute.subPath}$`), '')
+    }
+    return pathname
 }

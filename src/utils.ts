@@ -1,13 +1,26 @@
-import {ILocation} from '..'
+import {ILocation} from '../index'
+import {useRef} from 'react'
+import path from 'path-browserify'
 
 /**
- * @private 复制location对象，用于存储在react的state中以更新组件
+ * 将某个值使用ref同步，主要用于对付组件的闭包问题
+ * @param value
+ */
+export function useSync<T>(value: T) {
+    const ref = useRef<T>(value)
+    ref.current = value
+    return ref
+}
+
+/**
+ * 复制location对象，用于存储在react的state中以更新组件
  */
 export function cloneLocation(): ILocation {
     const copied: any = {}
     for (const k in location) {
         const v = location[k as keyof Location]
         if (strOrNum(v)) {
+            // 只保存字符串与数字类型的属性
             copied[k] = v
         }
     }
@@ -15,9 +28,15 @@ export function cloneLocation(): ILocation {
 }
 
 /**
- * @private 浅比较，判断location是否发生改变
- * @param a 
- * @param b 
+ * 判断值是否为字符串或数字
+ * @param value
+ */
+export function strOrNum(value: any): value is string | number {
+    return ({string: true, number: true} as any)[typeof value] || false
+}
+
+/**
+ * 浅比较，判断location是否发生改变
  */
 export function isLocationChanged(clonedLocation: ILocation) {
     for (const k in clonedLocation) {
@@ -30,110 +49,91 @@ export function isLocationChanged(clonedLocation: ILocation) {
 }
 
 /**
- * 判断值是否为字符串或数字
- * @param value 
+ * 全部统一使用"/"
+ * @param path
  */
-function strOrNum(value: any): value is string | number {
-    return ({string: true, number: true} as any)[typeof value] || false
+export function unifySlash(path: string) {
+    return path.replace(/\\/g, '/')
 }
 
 /**
- * 统一path格式，以"/"开头，且结尾没有"/"
- * @param path 
- * @param startWithSlash 是否以"/"开头 @default true
+ * 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
+ * @param path
+ * @param endWithSlash 是否以"/"开头，默认为true
  */
-export function standardPath(path: string, startWithSlash = true) {
-    return path.replace(/(\/|\\\/)+$/, '').replace(/^(\/|\\\/)*/, startWithSlash ? '/' : '')
-}
-
-/**
- * 拼接路径
- * @param paths
- */
-export function joinPath(...paths: (string | undefined)[]) {
-    const fn = (prev: string, next?: string) => {
-        if (!next) {
-            return standardPath(prev)
-        }
-        if (next[0] === '/') {
-            // "/"开头会开启新路径
-            return standardPath(next)
-        }
-        if (/^\.\./.test(next)) {
-            // ".."开头
-            return fn(
-                // 去掉prev的前一段路径
-                prev.replace(/\/[^/]+$/, ''),
-                // 去掉next的".."或"../"
-                next.replace(/^\.\.\/?/, '')
-            )
-        }
-        if (next[0] === '.') {
-            // "."开头
-            return fn(
-                prev,
-                // 去掉"."或"./"
-                next.replace(/^\.\/?/, '')
-            )
-        }
-        prev = standardPath(prev)
-        return prev === '/'
-            ? standardPath(next)
-            : prev + standardPath(next)
-    }
-    return paths.reduce(fn, '')
+export function unifyPath(path: string, endWithSlash = true) {
+    return unifySlash(path)
+        // 去掉末尾的"/"
+        .replace(/\/+$/, '')
+        // 如果没有以"/"开头，则选择性加上"/"
+        .replace(/^\/*/, endWithSlash ? '/' : '')
 }
 
 /**
  * 获得跳转后的新路径，用于非history模式的路由跳转
- * @param currentPath 
- * @param navigateTo 
+ * @param currentPath
+ * @param navigateTo
+ * @param base
  */
-export function navigatePath(currentPath: string, navigateTo: string) {
-    if (navigateTo[0] === '/') {
-        return navigateTo
+export function navigatePath(currentPath: string, navigateTo: string | URL, base: string) {
+    if (typeof navigateTo === 'string') {
+        navigateTo = unifySlash(navigateTo)
+    } else {
+        // navigateTo instanceof URL
+        if (navigateTo.origin !== location.origin) {
+            throw Error(`Cannot navigate different origin from "${location.origin}" to "${navigateTo.origin}".`)
+        }
+        navigateTo = navigateTo.pathname + navigateTo.search
     }
-    return joinPath(
+
+    if (navigateTo[0] === '/') {
+        // "/"开头需从头base重新开始路径
+        return path.join(base, navigateTo)
+    }
+
+    return path.join(
         // 清除currentPath的最后一段，再进行拼接
-        currentPath.replace(/\/[^/]+$/, ''),
+        currentPath.replace(/\/[^\/]+$/, ''),
         navigateTo
     )
 }
 
 /**
- * 截断路径
- * @param path 
- * @param truncate 
- * @returns null: 不匹配，string: 截断后的路径，''：精准匹配
+ * 从前端截断路径
+ * @param fullPath
+ * @param truncation
+ * @returns {string} 返回截断后的子路径
+ * @returns {null} 如果路径不匹配，返回null
  */
-export function truncatePath(path: string, truncate: string | RegExp) {
-    path = standardPath(path)
-    if (typeof truncate === 'string') {
-        truncate = standardPath(truncate)
-    } else {
-        truncate = String(truncate).slice(1, -1).replace(/^\^+/, '').replace(/\$+$/, '')
-        truncate = standardPath(truncate)
+export function truncatePath(fullPath: string, truncation: string | RegExp | undefined): string | null {
+    if (truncation instanceof RegExp) {
+        truncation = truncation.source.replace(/^\^?/, '').replace(/\$?$/, '')
     }
-    if (truncate === '/' || truncate === '\\/') {
-        // truncate为"/"时不裁剪
-        return path === '/' ? '' : path
+    fullPath = unifyPath(fullPath)
+    truncation = unifyPath(truncation || '')
+    // truncation为undefined、空字符串或'/'时无需截断
+    if (truncation === '/') {
+        // 特殊情况，当fullPath为"/"时匹配了undefined或空字符串，会得到空字符串
+        return fullPath === '/' ? '' : fullPath
     }
-    if (!RegExp(`^${truncate}(/[^/]+)*$`).test(path)) {
+    if (!RegExp(`^${truncation}(/[^/]+)*$`).test(fullPath)) {
         return null
     }
-    return path.replace(RegExp(`^${truncate}`), '')
+
+    return fullPath.replace(RegExp(`^${truncation}`), '')
 }
 
 /**
- * @private 内部使用，读取动态路径参数，并得到替换后的路径
- * @param params 
- * @param routePath 
- * @param referencePath 
- * @returns 替换后的路径
+ * 读取动态路径参数，并得到替换后的路径
+ * @param params
+ * @param routePath
+ * @param referencePath
+ * @returns {string} 替换后的路径
+ * @returns {null} 路径不匹配会得到null
  */
-export function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string) {
-    const paramKeys = standardPath(routePath, false).split('/')
-    const paramValues = standardPath(referencePath, false).split('/')
+export function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null {
+    const paramKeys = unifyPath(routePath, false).split('/')
+    const paramValues = unifyPath(referencePath, false).split('/')
     if (paramKeys.length > paramValues.length) {
         return null
     }
@@ -149,20 +149,8 @@ export function insertPathParams(params: Record<string, string>, routePath: stri
 }
 
 /**
- * 读取动态路径参数
- * @param routePath 
- * @param referencePath 
- * @returns 
- */
-export function getPathParams(routePath: string, referencePath: string) {
-    const params: Record<string, string> = {}
-    insertPathParams(params, routePath, referencePath)
-    return params
-}
-
-/**
- * 将glob通配符转换为正则表达式（仅支持*与?）
- * @param glob 
+ * 将glob通配符转换为正则表达式（支持*与?）
+ * @param glob
  */
 export function globToReg(glob: string) {
     return glob === '*'
@@ -173,7 +161,8 @@ export function globToReg(glob: string) {
                 // "**"匹配所有
                 .replace(/\*\*/g, '.*')
                 // "*"匹配任意多个非"/"字符
-                .replace(/[^\.]\*/g, $1 => $1[0] + '[^/]+')
+                .replace(/[^.]\*/g, $1 => $1[0] + '[^/]+')
+                .replace(/\*/g, '[^/]+')
                 // "?"匹配任意单个字符
                 .replace(/\?/g, '.')
         )
