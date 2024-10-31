@@ -65,13 +65,13 @@ export function Routes({routes, children}: RoutesProps) {
             const fn = (routes: RouteItem[], referencePath: string) => {
                 let subPath: string | null = null
                 const matchedRoute = routes.find(({path, children, extendable}) => {
-                    if (typeof path === 'string' && path[0] === '/') {
-                        // "/"开头使用pathname匹配
-                        referencePath = pathname!
-                    }
-
                     let endWithAsterisk = false
                     if (typeof path === 'string') {
+                        if (path[0] === '/') {
+                            // "/"开头使用pathname匹配
+                            referencePath = pathname!
+                        }
+
                         if (path.includes(':')) {
                             // 路径中存在动态参数
                             const replacedPath = insertPathParams(params, path, referencePath)
@@ -93,11 +93,11 @@ export function Routes({routes, children}: RoutesProps) {
 
                     subPath = truncatePath(referencePath, path)
                     if (children?.length || extendable) {
-                        // 有子路由，或可扩展的路由
+                        // 有子路由，或可扩展的路由时，只要subPath不为null均可匹配成功
                         return subPath !== null
                     }
                     if (endWithAsterisk) {
-                        // "/*"结尾，必须拥有剩余的subPath
+                        // "/*"结尾，必须有剩余的subPath
                         return !!subPath
                     }
                     // 无子路由需精准匹配
