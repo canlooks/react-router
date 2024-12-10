@@ -13,7 +13,7 @@ declare namespace Router {
     type NavigateOptions = {
         state?: any
         replace?: boolean
-        // Whether to restore the location to which the user has scrolled
+        /** Whether to restore the location to which the user has scrolled */
         scrollRestore?: boolean
     }
 
@@ -51,9 +51,9 @@ declare namespace Router {
     }
 
     type RouterProps = {
-        /** @default 'history' */
+        /** default `history` */
         mode?: Mode
-        /** @default '/' */
+        /** default `/` */
         base?: string
         children?: ReactNode
     }
