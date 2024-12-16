@@ -1,4 +1,4 @@
-import {Dispatch, MutableRefObject, ReactElement, ReactNode, SetStateAction} from 'react'
+import React, {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction} from 'react'
 
 declare namespace Router {
     /**
@@ -150,7 +150,7 @@ declare namespace Router {
      * link
      */
 
-    interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
+    interface LinkProps extends NavigateProps, Partial<React.JSX.IntrinsicElements['a']> {
         children?: ReactNode
     }
 
@@ -163,7 +163,7 @@ declare namespace Router {
      * 将某个值使用ref同步，主要用于对付组件的闭包问题
      * @param value
      */
-    function useSync<T>(value: T): MutableRefObject<T>
+    function useSync<T>(value: T): RefObject<T>
 
     /**
      * 复制location对象，用于存储在react的state中以更新组件

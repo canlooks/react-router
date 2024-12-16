@@ -1,6 +1,6 @@
 {
   "name": "@canlooks/react-router",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "C.CanLiang <canlooks@gmail.com>",
   "description": "React router manager",
   "keywords": [
@@ -13,9 +13,9 @@
   "types": "index.d.ts",
   "exports": {
     ".": {
+      "types": "./index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./index.d.ts"
+      "require": "./dist/cjs/index.js"
     }
   },
   "publishConfig": {
@@ -33,26 +33,25 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tscup",
-    "clean": "tscup clean",
+    "clean": "npx shx rm -rf dist",
+    "build": "npm run clean && tscup",
     "test": "vite -c test/vite.config.mts",
     "test:unit": "ts-node test/unitTest.ts"
   },
   "dependencies": {
     "path-browserify": "^1.0.1",
-    "tslib": "^2.8.0"
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@canlooks/tscup": "^0.0.6",
-    "@types/node": "^22.8.4",
+    "@canlooks/tscup": "^0.1.2",
+    "@types/node": "^22.10.2",
     "@types/path-browserify": "^1.0.3",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "shx": "^0.3.4",
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.10"
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
   }
 }

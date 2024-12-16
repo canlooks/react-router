@@ -5,6 +5,7 @@ node_modules
 
 package-lock.json
 tsconfig.json
+tscup.config.*
 
 # local env files
 .env.local

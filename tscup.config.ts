@@ -1,6 +1,15 @@
 import {defineConfig} from '@canlooks/tscup'
 
 export default defineConfig({
-    format: ['cjs', 'esm'],
-    clean: true
+    input: '.',
+    output: [
+        {
+            dir: 'dist/esm',
+            format: 'esm'
+        },
+        {
+            dir: 'dist/cjs',
+            format: 'cjs'
+        }
+    ]
 })

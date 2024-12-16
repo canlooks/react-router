@@ -21,9 +21,9 @@ export const Link = memo(({
 
     return children
         ? isValidElement(children)
-            ? cloneElement(children as ReactElement<JSX.IntrinsicElements['a']>, {
+            ? cloneElement(children as ReactElement<React.JSX.IntrinsicElements['a']>, {
                 onClick(e: React.MouseEvent<HTMLAnchorElement>) {
-                    children.props.onClick?.(e)
+                    (children.props as any).onClick?.(e)
                     props.onClick?.(e)
                     onClick()
                 }

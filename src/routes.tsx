@@ -39,11 +39,12 @@ export function Routes({routes, children}: RoutesProps) {
                 if (!isValidElement(child)) {
                     return []
                 }
+                const {props} = child as any
                 return [{
-                    ...child.props,
-                    path: typeof child.props.path === 'string' ? unifySlash(child.props.path) : child.props.path,
-                    ...child.props.children && {
-                        children: fn(child.props.children)
+                    ...props,
+                    path: typeof props.path === 'string' ? unifySlash(props.path) : props.path,
+                    ...props.children && {
+                        children: fn(props.children)
                     }
                 }]
             })

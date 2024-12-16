@@ -1,7 +1,7 @@
 import {createRoot} from 'react-dom/client'
 import {Outlet, Router, Routes, useCurrentRoute, useRouter} from '../src'
 
-createRoot(document.getElementById('app')).render(<App/>)
+createRoot(document.getElementById('app')!).render(<App/>)
 
 function App() {
     return (
