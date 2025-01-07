@@ -4,16 +4,16 @@ import {useRouter} from './router'
 import {globToReg, insertPathParams, truncatePath, unifySlash} from './utils'
 import {Outlet} from './outlet'
 
-const routeStackContext = createContext([] as MatchedRouteItem[])
+const RouteStackContext = createContext([] as MatchedRouteItem[])
 
 export function useRouteStack() {
-    return useContext(routeStackContext)
+    return useContext(RouteStackContext)
 }
 
-export const routeStackIndexContext = createContext(-1)
+export const RouteStackIndexContext = createContext(-1)
 
 export function useRouteStackIndex() {
-    return useContext(routeStackIndexContext)
+    return useContext(RouteStackIndexContext)
 }
 
 export function useCurrentRoute(): MatchedRouteItem | null {
@@ -120,11 +120,11 @@ export function Routes({routes, children}: RoutesProps) {
     }, [currentPathname, routesStructure])
 
     return (
-        <routeStackContext.Provider value={routeStack}>
-            <routeStackIndexContext.Provider value={-1}>
+        <RouteStackContext value={routeStack}>
+            <RouteStackIndexContext value={-1}>
                 <Outlet/>
-            </routeStackIndexContext.Provider>
-        </routeStackContext.Provider>
+            </RouteStackIndexContext>
+        </RouteStackContext>
     )
 }
 

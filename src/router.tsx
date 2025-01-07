@@ -1,12 +1,12 @@
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
-import {NavigateOptions, RouterContext, RouterProps, To} from '..'
+import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
 import {cloneLocation, isLocationChanged, navigatePath, unifyPath, unifySlash, useSync} from './utils'
 import path from 'path-browserify'
 
-export const routerContext = createContext({} as RouterContext)
+export const RouterContext = createContext({} as IRouterContext)
 
 export function useRouter() {
-    return useContext(routerContext)
+    return useContext(RouterContext)
 }
 
 export function Router({
@@ -165,7 +165,7 @@ export function Router({
     }
 
     return (
-        <routerContext.Provider value={{
+        <RouterContext.Provider value={{
             mode,
             base,
             location: locationOfEachMode,
@@ -179,7 +179,7 @@ export function Router({
             setState
         }}>
             {children}
-        </routerContext.Provider>
+        </RouterContext.Provider>
     )
 }
 

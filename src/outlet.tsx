@@ -1,4 +1,4 @@
-import {routeStackIndexContext, useCurrentRoute, useRouteStack, useRouteStackIndex} from './routes'
+import {RouteStackIndexContext, useCurrentRoute, useRouteStack, useRouteStackIndex} from './routes'
 import {useRouter} from './router'
 
 export function useOutlet() {
@@ -6,9 +6,9 @@ export function useOutlet() {
     const stackIndex = useRouteStackIndex() + 1
     const element = stack[stackIndex]?.element
     return element
-        ? <routeStackIndexContext.Provider value={stackIndex}>
+        ? <RouteStackIndexContext value={stackIndex}>
             {element}
-        </routeStackIndexContext.Provider>
+        </RouteStackIndexContext>
             : null
 }
 
