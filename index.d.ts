@@ -1,4 +1,4 @@
-import React, {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction} from 'react'
+import {Dispatch, JSX, RefObject, ReactElement, ReactNode, SetStateAction} from 'react'
 
 declare namespace Router {
     /**
@@ -80,11 +80,15 @@ declare namespace Router {
 
     function Routes(props: RoutesProps): ReactElement
 
+    /** completely route stack */
     function useRouteStack(): MatchedRouteItem[]
+
+    /** route stack only specified `element` prop. */
+    function useRouteElementStack(): MatchedRouteItem[]
 
     function useRouteStackIndex(): number
 
-    /** Get current matched route item. */
+    /** current matched route item. */
     function useCurrentRoute(): MatchedRouteItem | null
 
     /**
@@ -101,7 +105,8 @@ declare namespace Router {
     }
 
     interface MatchedRouteItem extends RouteItem {
-        subPath: string
+        /** @private */
+        _subPath: string
     }
 
     interface RouteProps extends Omit<RouteItem, 'children'> {
@@ -150,7 +155,7 @@ declare namespace Router {
      * link
      */
 
-    interface LinkProps extends NavigateProps, Partial<React.JSX.IntrinsicElements['a']> {
+    interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
         children?: ReactNode
     }
 

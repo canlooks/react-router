@@ -1,6 +1,6 @@
 {
   "name": "@canlooks/react-router",
-  "version": "0.0.13",
+  "version": "1.0.6",
   "author": "C.CanLiang <canlooks@gmail.com>",
   "description": "React router manager",
   "keywords": [
@@ -36,7 +36,7 @@
     "clean": "npx shx rm -rf dist",
     "build": "npm run clean && tscup",
     "test": "vite -c test/vite.config.mts",
-    "test:unit": "ts-node test/unitTest.ts"
+    "test:unit": "npx ts-node test/unit.ts"
   },
   "dependencies": {
     "path-browserify": "^1.0.1",
@@ -50,7 +50,6 @@
     "@types/react-dom": "^19.0.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   }

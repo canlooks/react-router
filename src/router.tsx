@@ -165,7 +165,7 @@ export function Router({
     }
 
     return (
-        <RouterContext.Provider value={{
+        <RouterContext value={{
             mode,
             base,
             location: locationOfEachMode,
@@ -179,7 +179,7 @@ export function Router({
             setState
         }}>
             {children}
-        </RouterContext.Provider>
+        </RouterContext>
     )
 }
 

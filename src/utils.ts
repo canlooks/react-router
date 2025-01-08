@@ -111,9 +111,9 @@ export function truncatePath(fullPath: string, truncation: string | RegExp | und
     }
     fullPath = unifyPath(fullPath)
     truncation = unifyPath(truncation || '')
-    // truncation为undefined、空字符串或'/'时无需截断
+    // truncation为undefined、空字符串或'/'时，经过unifyPath,均得到'/'，此时无需截断
     if (truncation === '/') {
-        // 特殊情况，当fullPath为"/"时匹配了undefined或空字符串，会得到空字符串
+        // 特殊情况，当fullPath也为"/"时应得到空字符串
         return fullPath === '/' ? '' : fullPath
     }
     if (!RegExp(`^${truncation}(/[^/]+)*$`).test(fullPath)) {

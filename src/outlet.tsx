@@ -1,8 +1,8 @@
-import {RouteStackIndexContext, useCurrentRoute, useRouteStack, useRouteStackIndex} from './routes'
+import {RouteStackIndexContext, useCurrentRoute, useRouteElementStack, useRouteStackIndex} from './routes'
 import {useRouter} from './router'
 
 export function useOutlet() {
-    const stack = useRouteStack()
+    const stack = useRouteElementStack()
     const stackIndex = useRouteStackIndex() + 1
     const element = stack[stackIndex]?.element
     return element

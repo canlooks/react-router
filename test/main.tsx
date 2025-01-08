@@ -1,42 +1,29 @@
 import {createRoot} from 'react-dom/client'
-import {Outlet, Router, Routes, useCurrentRoute, useRouter} from '../src'
+import {useRouteStack, Router, Routes} from '../src'
+import {RouteItem, Outlet} from '../index'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
+const routes: RouteItem[] = [
+    {
+        path: '/',
+        element: <Layout/>,
+        extendable: true
+    }
+]
+
 function App() {
     return (
-        <Router base="/base">
-            <Routes routes={[
-                {
-                    path: '/',
-                    element: <Index/>,
-                    children: [
-                        {
-                            path: 'about/*',
-                            element: <About/>
-                        }
-                    ]
-                }
-            ]}/>
+        <Router>
+            <Routes routes={routes}/>
         </Router>
     )
 }
 
-function Index() {
-    return (
-        <div>
-            <h1>Index</h1>
-            <Outlet/>
-        </div>
-    )
-}
+function Layout() {
+    const stack = useRouteStack()
 
-function About() {
-    const {pathname} = useRouter()
-    const currentRoute = useCurrentRoute()
-    console.log(36, pathname, currentRoute)
+    console.log(50, stack)
 
-    return (
-        <h1>About</h1>
-    )
+    return <Outlet/>
 }
