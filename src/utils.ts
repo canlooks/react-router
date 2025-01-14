@@ -1,6 +1,5 @@
-import {ILocation} from '../index'
+import {ILocation, To} from '../index'
 import {useRef} from 'react'
-import path from 'path-browserify'
 
 /**
  * 将某个值使用ref同步，主要用于对付组件的闭包问题
@@ -49,78 +48,123 @@ export function isLocationChanged(clonedLocation: ILocation) {
 }
 
 /**
- * 全部统一使用"/"
+ * 统一使用"/"，并且排除"//"的情况
  * @param path
  */
 export function unifySlash(path: string) {
-    return path.replace(/\\/g, '/')
+    return path
+        .replace(/\\/g, '/')
+        .replace(/\/+/g, '/')
 }
 
 /**
- * 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
+ * 去掉开头的"/"，执行该方法前需要先执行{@link unifySlash}
  * @param path
- * @param endWithSlash 是否以"/"开头，默认为true
  */
-export function unifyPath(path: string, endWithSlash = true) {
-    return unifySlash(path)
-        // 去掉末尾的"/"
-        .replace(/\/+$/, '')
-        // 如果没有以"/"开头，则选择性加上"/"
-        .replace(/^\/*/, endWithSlash ? '/' : '')
+function dropStartSlash(path: string) {
+    return path.replace(/^\/+/, '')
+}
+
+/**
+ * 去掉末尾的"/"，执行该方法前需要先执行{@link unifySlash}
+ * @param path
+ */
+function dropEndSlash(path: string) {
+    return path.replace(/\/+$/, '')
+}
+
+/**
+ * 统一path格式，去掉前后的"/"
+ * @param path
+ */
+export function unifyPath(path: string) {
+    path = unifySlash(path)
+    path = dropStartSlash(path)
+    return dropEndSlash(path)
+}
+
+/**
+ * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}
+ * @param path
+ */
+export function dropLastPortion(path: string) {
+    return path.replace(/\/[^/]+\/*$/, '')
+}
+
+export function joinPath(...paths: string[]) {
+    const fn = (prev: string, next: string) => {
+        prev = unifySlash(prev)
+        next = unifySlash(next)
+        if (!prev) {
+            return next
+        }
+        if (!next) {
+            return prev
+        }
+        // "/"开头，开启新路径
+        if (next[0] === '/') {
+            return next
+        }
+        // ".."或"../"开头，去掉prev的前一段后递归
+        if (next.startsWith('..')) {
+            return fn(
+                dropLastPortion(prev),
+                next.replace(/^\.\.\/?/, '')
+            )
+        }
+        // "."或"./"开头，直接递归
+        if (next[0] === '.') {
+            return fn(prev, next.replace(/^\.\/?/, ''))
+        }
+        return `${dropEndSlash(prev)}/${dropEndSlash(next)}`
+    }
+    return paths.reduce(fn)
 }
 
 /**
  * 获得跳转后的新路径，用于非history模式的路由跳转
  * @param currentPath
- * @param navigateTo
+ * @param to
  * @param base
  */
-export function navigatePath(currentPath: string, navigateTo: string | URL, base: string) {
-    if (typeof navigateTo === 'string') {
-        navigateTo = unifySlash(navigateTo)
+export function resolveHashPath(currentPath: string, to: To, base: string) {
+    if (typeof to === 'string') {
+        to = unifySlash(to)
     } else {
-        // navigateTo instanceof URL
-        if (navigateTo.origin !== location.origin) {
-            throw Error(`Cannot navigate different origin from "${location.origin}" to "${navigateTo.origin}".`)
+        // to instanceof URL
+        if (to.origin !== location.origin) {
+            throw Error(`Cannot navigate different origin from "${location.origin}" to "${to.origin}".`)
         }
-        navigateTo = navigateTo.pathname + navigateTo.search
+        to = to.pathname + to.search
     }
-
-    if (navigateTo[0] === '/') {
+    if (to[0] === '/') {
         // "/"开头需从头base重新开始路径
-        return path.join(base, navigateTo)
+        return joinPath(base, to)
     }
-
-    return path.join(
-        // 清除currentPath的最后一段，再进行拼接
-        currentPath.replace(/\/[^\/]+$/, ''),
-        navigateTo
-    )
+    // 去掉currentPath的最后一段，再进行拼接
+    return joinPath(dropLastPortion(currentPath), to)
 }
 
 /**
  * 从前端截断路径
- * @param fullPath
- * @param truncation
+ * @param referencePath
+ * @param routePath
  * @returns {string} 返回截断后的子路径
  * @returns {null} 如果路径不匹配，返回null
  */
-export function truncatePath(fullPath: string, truncation: string | RegExp | undefined): string | null {
-    if (truncation instanceof RegExp) {
-        truncation = truncation.source.replace(/^\^?/, '').replace(/\$?$/, '')
+export function truncatePath(referencePath: string, routePath: string | RegExp | undefined): string | null {
+    if (routePath instanceof RegExp) {
+        routePath = routePath.source.replace(/^\^?/, '').replace(/\$?$/, '')
     }
-    fullPath = unifyPath(fullPath)
-    truncation = unifyPath(truncation || '')
-    // truncation为undefined、空字符串或'/'时，经过unifyPath,均得到'/'，此时无需截断
-    if (truncation === '/') {
-        // 特殊情况，当fullPath也为"/"时应得到空字符串
-        return fullPath === '/' ? '' : fullPath
+    referencePath = unifyPath(referencePath)
+    routePath = unifyPath(routePath || '')
+    if (!routePath) {
+        return referencePath
     }
-    if (!RegExp(`^${truncation}(/[^/]+)*$`).test(fullPath)) {
+    if (!RegExp(`^${routePath}(/[^/]+)*$`).test(referencePath)) {
         return null
     }
-
-    return fullPath.replace(RegExp(`^${truncation}`), '')
+    return referencePath.replace(RegExp(`^${routePath}`), '')
 }
 
 /**
@@ -132,8 +176,8 @@ export function truncatePath(fullPath: string, truncation: string | RegExp | und
  * @returns {null} 路径不匹配会得到null
  */
 export function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null {
-    const paramKeys = unifyPath(routePath, false).split('/')
-    const paramValues = unifyPath(referencePath, false).split('/')
+    const paramKeys = unifyPath(routePath).split('/')
+    const paramValues = unifyPath(referencePath).split('/')
     if (paramKeys.length > paramValues.length) {
         return null
     }

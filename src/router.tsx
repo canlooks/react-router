@@ -1,6 +1,6 @@
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
-import {cloneLocation, isLocationChanged, navigatePath, unifyPath, unifySlash, useSync} from './utils'
+import {cloneLocation, isLocationChanged, resolveHashPath, unifyPath, unifySlash, useSync} from './utils'
 import path from 'path-browserify'
 
 export const RouterContext = createContext({} as IRouterContext)
@@ -14,14 +14,14 @@ export function Router({
     base = '/',
     children
 }: RouterProps) {
-    base ??= unifyPath(base || '/')
+    base = '/' + unifyPath(base)
 
     const [clonedLocation, setClonedLocation] = useState(() => cloneLocation())
 
     const syncClonedLocation = useSync(clonedLocation)
 
     const updateClonedLocation = () => {
-        // 该方法会在useEffect中调用，因此需要useSync来同步
+        // 该方法会在useEffect中调用，因此clonedLocation需要useSync来同步
         isLocationChanged(syncClonedLocation.current) && setClonedLocation(cloneLocation())
     }
 
@@ -118,6 +118,7 @@ export function Router({
             if (mode === 'history') {
                 history.scrollRestoration = scrollRestore ? 'auto' : 'manual'
                 const method = replace ? history.replaceState : history.pushState
+                // const destination =
                 if (typeof a === 'string') {
                     a = unifySlash(a)
                     method.call(history, state, '', a[0] === '/'
@@ -131,7 +132,7 @@ export function Router({
                 updateClonedLocation()
             } else {
                 // mode === 'hash' || mode === 'memory'
-                const destination = navigatePath(hash, a, base)
+                const destination = resolveHashPath(hash, a, base)
                 const newStack = replace
                     ? []
                     : stack.slice(0, stackIndex + 1)

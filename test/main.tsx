@@ -1,6 +1,7 @@
 import {createRoot} from 'react-dom/client'
-import {useRouteStack, Router, Routes} from '../src'
-import {RouteItem, Outlet} from '../index'
+import {useRouter, Router, Routes, Outlet} from '../src'
+import {RouteItem} from '../index'
+import {useEffect} from 'react'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
@@ -8,7 +9,16 @@ const routes: RouteItem[] = [
     {
         path: '/',
         element: <Layout/>,
-        extendable: true
+        children: [
+            {
+                path: 'a/b/c',
+                element: <div>page a</div>
+            },
+            {
+                path: 'b',
+                element: <div>page b</div>,
+            }
+        ]
     }
 ]
 
@@ -21,9 +31,30 @@ function App() {
 }
 
 function Layout() {
-    const stack = useRouteStack()
+    useEffect(() => {
+        console.log('layout re-render')
 
-    console.log(50, stack)
+        document.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', e => {
+                // e.preventDefault()
+                console.log(e, a.getAttribute('href'))
+            })
+        })
+    }, [])
 
-    return <Outlet/>
+    const {navigate} = useRouter()
+
+    return (
+        <>
+            <Outlet/>
+            <div>
+                <button onClick={() => navigate('a')}>a</button>
+                <button onClick={() => navigate('b')}>b</button>
+            </div>
+            <div>
+                <a href="/a">a</a>
+                <a href="/b">b</a>
+            </div>
+        </>
+    )
 }

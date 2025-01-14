@@ -156,6 +156,7 @@ declare namespace Router {
      */
 
     interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
+        /** custom Link component */
         children?: ReactNode
     }
 
@@ -165,42 +166,42 @@ declare namespace Router {
      */
 
     /**
-     * 将某个值使用ref同步，主要用于对付组件的闭包问题
+     * @private 将某个值使用ref同步，主要用于对付组件的闭包问题
      * @param value
      */
     function useSync<T>(value: T): RefObject<T>
 
     /**
-     * 复制location对象，用于存储在react的state中以更新组件
+     * @private 复制location对象，用于存储在react的state中以更新组件
      */
     function cloneLocation(): ILocation
 
     /**
-     * 判断值是否为字符串或数字
+     * @private 判断值是否为字符串或数字
      * @param value
      */
     function strOrNum(value: any): value is string | number
 
     /**
-     * 浅比较，判断location是否发生改变
+     * @private 浅比较，判断location是否发生改变
      */
     function isLocationChanged(clonedLocation: ILocation): boolean
 
     /**
-     * 全部统一使用"/"
+     * @private 全部统一使用"/"
      * @param path
      */
     function unifySlash(path: string): string
 
     /**
-     * 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
+     * @private 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
      * @param path
      * @param endWithSlash {@default true} 是否以"/"开头
      */
     function unifyPath(path: string, endWithSlash?: boolean): string
 
     /**
-     * 获得跳转后的新路径，用于非history模式的路由跳转
+     * @private 获得跳转后的新路径，用于非history模式的路由跳转
      * @param currentPath
      * @param navigateTo
      * @param base
@@ -208,7 +209,7 @@ declare namespace Router {
     function navigatePath(currentPath: string, navigateTo: string | URL, base: string): string
 
     /**
-     * 从前端截断路径
+     * @private 从前端截断路径
      * @param fullPath
      * @param truncation
      * @returns {string} 返回截断后的子路径
@@ -217,7 +218,7 @@ declare namespace Router {
     function truncatePath(fullPath: string, truncation: string | RegExp | undefined): string | null
 
     /**
-     * 读取动态路径参数，并得到替换后的路径
+     * @private 读取动态路径参数，并得到替换后的路径
      * @param params
      * @param routePath {@link RouteItem.path}
      * @param referencePath
@@ -227,7 +228,7 @@ declare namespace Router {
     function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null
 
     /**
-     * 将glob通配符转换为正则表达式（支持*与?）
+     * @private 将glob通配符转换为正则表达式（支持*与?）
      * @param glob
      */
     function globToReg(glob: string): RegExp
