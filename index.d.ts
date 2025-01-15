@@ -1,5 +1,4 @@
 import React, {Dispatch, JSX, RefObject, ReactElement, ReactNode, SetStateAction, ComponentType} from 'react'
-import {useResolvePath} from './src'
 
 declare namespace Router {
     /**
@@ -165,6 +164,8 @@ declare namespace Router {
         /** custom anchor element, default is `a` */
         component?: ComponentType<LinkComponentType> | string
     }
+
+    function Link(props: LinkProps): ReactElement
     
     function useResolvePath(to?: To): string
 
