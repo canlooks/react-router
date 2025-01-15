@@ -1,5 +1,5 @@
 import {ILocation, To} from '../index'
-import {useRef} from 'react'
+import {Dispatch, RefObject, SetStateAction, useCallback, useRef, useState} from 'react'
 
 /**
  * 将某个值使用ref同步，主要用于对付组件的闭包问题
@@ -9,6 +9,24 @@ export function useSync<T>(value: T) {
     const ref = useRef<T>(value)
     ref.current = value
     return ref
+}
+
+/**
+ * 同步的状态，state包裹在ref内，主要用于对付组件的闭包问题
+ * @param initialState
+ */
+export function useSyncState<T>(initialState: T | (() => T)): [RefObject<T>, Dispatch<SetStateAction<T>>]
+export function useSyncState<T = undefined>(): [RefObject<T | undefined>, Dispatch<SetStateAction<T | undefined>>]
+export function useSyncState(initialState?: any): [RefObject<any>, Dispatch<SetStateAction<any>>] {
+    const [state, setState] = useState(initialState)
+    const synState = useSync(state)
+    return [
+        synState,
+        useCallback(state => {
+            const newState = typeof state === 'function' ? state(synState.current) : state
+            synState.current !== newState && setState(synState.current = newState)
+        }, [])
+    ]
 }
 
 /**
@@ -61,7 +79,7 @@ export function unifySlash(path: string) {
  * 去掉开头的"/"，执行该方法前需要先执行{@link unifySlash}
  * @param path
  */
-function dropStartSlash(path: string) {
+export function dropStartSlash(path: string) {
     return path.replace(/^\/+/, '')
 }
 
@@ -69,7 +87,7 @@ function dropStartSlash(path: string) {
  * 去掉末尾的"/"，执行该方法前需要先执行{@link unifySlash}
  * @param path
  */
-function dropEndSlash(path: string) {
+export function dropEndSlash(path: string) {
     return path.replace(/\/+$/, '')
 }
 
@@ -91,6 +109,10 @@ export function dropLastPortion(path: string) {
     return path.replace(/\/[^/]+\/*$/, '')
 }
 
+/**
+ * 拼接路径
+ * @param paths
+ */
 export function joinPath(...paths: string[]) {
     const fn = (prev: string, next: string) => {
         prev = unifySlash(prev)
@@ -122,12 +144,11 @@ export function joinPath(...paths: string[]) {
 }
 
 /**
- * 获得跳转后的新路径，用于非history模式的路由跳转
- * @param currentPath
+ * 生成跳转路径
  * @param to
- * @param base
+ * @param fromPath
  */
-export function resolveHashPath(currentPath: string, to: To, base: string) {
+export function resolvePath(to: To, fromPath?: string | null) {
     if (typeof to === 'string') {
         to = unifySlash(to)
     } else {
@@ -137,12 +158,10 @@ export function resolveHashPath(currentPath: string, to: To, base: string) {
         }
         to = to.pathname + to.search
     }
-    if (to[0] === '/') {
-        // "/"开头需从头base重新开始路径
-        return joinPath(base, to)
-    }
-    // 去掉currentPath的最后一段，再进行拼接
-    return joinPath(dropLastPortion(currentPath), to)
+    return !fromPath || to[0] === '/'
+        ? to
+        // 去掉fromPath的最后一段，再进行拼接
+        : joinPath(dropLastPortion(fromPath), to)
 }
 
 /**

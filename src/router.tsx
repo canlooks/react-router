@@ -1,7 +1,6 @@
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
-import {cloneLocation, isLocationChanged, resolveHashPath, unifyPath, unifySlash, useSync} from './utils'
-import path from 'path-browserify'
+import {cloneLocation, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
 
 export const RouterContext = createContext({} as IRouterContext)
 
@@ -16,23 +15,20 @@ export function Router({
 }: RouterProps) {
     base = '/' + unifyPath(base)
 
-    const [clonedLocation, setClonedLocation] = useState(() => cloneLocation())
-
-    const syncClonedLocation = useSync(clonedLocation)
+    const [clonedLocation, setClonedLocation] = useSyncState(() => cloneLocation())
 
     const updateClonedLocation = () => {
-        // 该方法会在useEffect中调用，因此clonedLocation需要useSync来同步
-        isLocationChanged(syncClonedLocation.current) && setClonedLocation(cloneLocation())
+        isLocationChanged(clonedLocation.current) && setClonedLocation(cloneLocation())
     }
 
     useEffect(() => {
-        if (mode === 'history') {
-            addEventListener('popstate', updateClonedLocation)
-            return () => {
-                removeEventListener('popstate', updateClonedLocation)
-            }
+        if (mode !== 'history') {
+            return
         }
-        return
+        addEventListener('popstate', updateClonedLocation)
+        return () => {
+            removeEventListener('popstate', updateClonedLocation)
+        }
     }, [])
 
     const [hash, setHash] = useState(() => mode === 'hash'
@@ -55,18 +51,16 @@ export function Router({
         setHash(hash)
     }
 
-    const locationOfEachMode = useMemo(() => {
+    // 不同模式下的location对象
+    const locationInMode = useMemo(() => {
         return mode === 'history'
-            ? clonedLocation
-            : new URL(hash, clonedLocation.origin)
-    }, [clonedLocation, hash, mode])
+            ? clonedLocation.current
+            : new URL(hash, clonedLocation.current.origin)
+    }, [clonedLocation.current, hash, mode])
 
     const [innerState, setInnerState] = useState<any>(null)
 
-    /**
-     * 提供给context的方法
-     * @param state
-     */
+    // 提供给context的方法
     const setState = (state: any) => {
         mode === 'history' && history.replaceState(state, '')
         setInnerState(state)
@@ -76,31 +70,32 @@ export function Router({
 
     useMemo(() => {
         params.current = {}
-    }, [locationOfEachMode])
+    }, [locationInMode])
 
+    // 截断base后的pathname
     const pathname = useMemo(() => {
-        const relative = path.relative(base, locationOfEachMode.pathname)
-        if (relative[0] === '.') {
-            return null
-        }
-        return '/' + relative
-    }, [locationOfEachMode, base])
+        return '/' + truncatePath(locationInMode.pathname, base)
+    }, [locationInMode, base])
 
     /**
      * ------------------------------------------------------------------
      * 路由跳转方法
      */
 
-    const navigate = (a: To | number, options?: NavigateOptions) => {
-        if (typeof a === 'number') {
-            if (!a) {
+    const navigate = (to: To | number, {
+        replace,
+        state = null,
+        scrollRestore = true
+    }: NavigateOptions = {}) => {
+        if (typeof to === 'number') {
+            if (!to) {
                 return
             }
             if (mode === 'history') {
-                history.go(a)
+                history.go(to)
             } else {
                 // mode === 'hash' || mode === 'memory'
-                const targetIndex = stackIndex + a
+                const targetIndex = stackIndex + to
                 const targetHash = stack[targetIndex]
                 if (typeof targetHash !== 'undefined') {
                     setStackIndex(targetIndex)
@@ -109,30 +104,24 @@ export function Router({
             }
         } else {
             // typeof a === 'string' || a instanceof URL
-            const {
-                replace,
-                state = null,
-                scrollRestore = true
-            } = options || {}
-
             if (mode === 'history') {
                 history.scrollRestoration = scrollRestore ? 'auto' : 'manual'
                 const method = replace ? history.replaceState : history.pushState
-                // const destination =
-                if (typeof a === 'string') {
-                    a = unifySlash(a)
-                    method.call(history, state, '', a[0] === '/'
+                if (typeof to === 'string') {
+                    to = unifySlash(to)
+                    method.call(history, state, '', to[0] === '/'
                         // "/"开头需拼接base
-                        ? path.join(base, a)
-                        : a
+                        ? joinPath(base, to)
+                        : to
                     )
                 } else {
-                    method.call(history, state, '', a)
+                    // to instanceof URL
+                    method.call(history, state, '', to)
                 }
                 updateClonedLocation()
             } else {
                 // mode === 'hash' || mode === 'memory'
-                const destination = resolveHashPath(hash, a, base)
+                const destination = resolvePath(to, hash)
                 const newStack = replace
                     ? []
                     : stack.slice(0, stackIndex + 1)
@@ -169,7 +158,7 @@ export function Router({
         <RouterContext value={{
             mode,
             base,
-            location: locationOfEachMode,
+            location: locationInMode,
             params: params.current,
             pathname,
             replace,

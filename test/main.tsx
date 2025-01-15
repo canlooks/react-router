@@ -1,5 +1,5 @@
 import {createRoot} from 'react-dom/client'
-import {useRouter, Router, Routes, Outlet} from '../src'
+import {useRouter, Router, Routes, Outlet, Link} from '../src'
 import {RouteItem} from '../index'
 import {useEffect} from 'react'
 
@@ -11,8 +11,8 @@ const routes: RouteItem[] = [
         element: <Layout/>,
         children: [
             {
-                path: 'a/b/c',
-                element: <div>page a</div>
+                path: '',
+                element: <div>index</div>
             },
             {
                 path: 'b',
@@ -24,7 +24,7 @@ const routes: RouteItem[] = [
 
 function App() {
     return (
-        <Router>
+        <Router mode="hash">
             <Routes routes={routes}/>
         </Router>
     )
@@ -33,13 +33,6 @@ function App() {
 function Layout() {
     useEffect(() => {
         console.log('layout re-render')
-
-        document.querySelectorAll('a').forEach(a => {
-            a.addEventListener('click', e => {
-                // e.preventDefault()
-                console.log(e, a.getAttribute('href'))
-            })
-        })
     }, [])
 
     const {navigate} = useRouter()
@@ -52,8 +45,8 @@ function Layout() {
                 <button onClick={() => navigate('b')}>b</button>
             </div>
             <div>
-                <a href="/a">a</a>
-                <a href="/b">b</a>
+                <Link to="/">a</Link>
+                <Link to="b">b</Link>
             </div>
         </>
     )

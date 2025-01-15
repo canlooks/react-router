@@ -1,39 +1,52 @@
-import React, {cloneElement, isValidElement, memo, ReactElement} from 'react'
-import {LinkProps} from '..'
+import {memo} from 'react'
+import {LinkComponentType, LinkProps, To} from '..'
 import {useRouter} from './router'
+import {joinPath, resolvePath} from './utils'
 
 export const Link = memo(({
+    component: Component = 'a',
     to,
     delta,
     replace,
     scrollRestore,
     state,
-    children,
     ...props
 }: LinkProps) => {
     const {navigate} = useRouter()
 
-    const onClick = () => {
-        typeof delta === 'number'
-            ? navigate(delta)
-            : typeof to !== 'undefined' && navigate(to, {replace, scrollRestore, state})
+    const resolvedPath = useResolvePath(to)
+
+    const usingDelta = typeof delta === 'number'
+
+    const aProps: LinkComponentType = {
+        ...!usingDelta && {href: resolvedPath},
+        onClick(e) {
+            props.onClick?.(e)
+            if (usingDelta) {
+                navigate(delta)
+            } else {
+                if (typeof to === 'undefined') {
+                    return
+                }
+                if (!e.ctrlKey) {
+                    e.preventDefault()
+                    navigate(to, {replace, scrollRestore, state})
+                }
+            }
+        }
     }
 
-    return children
-        ? isValidElement(children)
-            ? cloneElement(children as ReactElement<React.JSX.IntrinsicElements['a']>, {
-                onClick(e: React.MouseEvent<HTMLAnchorElement>) {
-                    (children.props as any).onClick?.(e)
-                    props.onClick?.(e)
-                    onClick()
-                }
-            })
-            : children
-        : <a
-            {...props}
-            onClick={e => {
-                props.onClick?.(e)
-                onClick()
-            }}
-        />
+    return <Component {...props} {...aProps}/>
 })
+
+export function useResolvePath(to?: To) {
+    const {base, mode, pathname} = useRouter()
+    if (!to) {
+        return ''
+    }
+    const resolvedPath = resolvePath(to, pathname)
+    if (mode === 'history') {
+        return joinPath(base, resolvedPath)
+    }
+    return '#' + resolvedPath
+}

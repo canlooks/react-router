@@ -1,5 +1,5 @@
 import {MatchedRouteItem, RouteItem, RouteProps, RoutesProps} from '..'
-import {Children, createContext, isValidElement, ReactNode, useContext, useMemo} from 'react'
+import {Children, createContext, isValidElement, ReactElement, ReactNode, useContext, useMemo} from 'react'
 import {useRouter} from './router'
 import {globToReg, insertPathParams, truncatePath, unifySlash} from './utils'
 import {Outlet} from './outlet'
@@ -37,22 +37,22 @@ export function Routes({routes, children}: RoutesProps) {
             }
             return recurve(routes)
         }
-        const recurve = (children: ReactNode[]): RouteItem[] => {
-            return children.flatMap(child => {
+        const recurve = (children: ReactNode): RouteItem[] => {
+            return Children.toArray(children).flatMap(child => {
                 if (!isValidElement(child)) {
                     return []
                 }
-                const {props} = child as any
-                return [{
+                const {props} = child as ReactElement<RouteItem & {children?: ReactNode}>
+                return {
                     ...props,
                     path: typeof props.path === 'string' ? unifySlash(props.path) : props.path,
                     ...props.children && {
                         children: recurve(props.children)
                     }
-                }]
+                }
             })
         }
-        return recurve(Children.toArray(children))
+        return recurve(children)
     }, [routes, children])
 
     const {pathname, params} = useRouter()

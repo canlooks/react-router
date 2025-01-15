@@ -1,4 +1,5 @@
-import {Dispatch, JSX, RefObject, ReactElement, ReactNode, SetStateAction} from 'react'
+import React, {Dispatch, JSX, RefObject, ReactElement, ReactNode, SetStateAction, ComponentType} from 'react'
+import {useResolvePath} from './src'
 
 declare namespace Router {
     /**
@@ -154,11 +155,18 @@ declare namespace Router {
      * ---------------------------------------------------------------
      * link
      */
+    
+    type LinkComponentType = {
+        href?: string
+        onClick(e: React.MouseEvent<HTMLAnchorElement>): void
+    }
 
     interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
-        /** custom Link component */
-        children?: ReactNode
+        /** custom anchor element, default is `a` */
+        component?: ComponentType<LinkComponentType> | string
     }
+    
+    function useResolvePath(to?: To): string
 
     /**
      * ---------------------------------------------------------------
@@ -170,6 +178,13 @@ declare namespace Router {
      * @param value
      */
     function useSync<T>(value: T): RefObject<T>
+
+    /**
+     * 同步的状态，state包裹在ref内，主要用于对付组件的闭包问题
+     * @param initialState
+     */
+    function useSyncState<T>(initialState: T | (() => T)): [RefObject<T>, Dispatch<SetStateAction<T>>]
+    function useSyncState<T = undefined>(): [RefObject<T | undefined>, Dispatch<SetStateAction<T | undefined>>]
 
     /**
      * @private 复制location对象，用于存储在react的state中以更新组件
@@ -194,28 +209,50 @@ declare namespace Router {
     function unifySlash(path: string): string
 
     /**
-     * @private 统一path格式，统一使用"/"；选择性以"/"开头，且末尾无"/"
+     * 去掉开头的"/"，执行该方法前需要先执行{@link unifySlash}
      * @param path
-     * @param endWithSlash {@default true} 是否以"/"开头
      */
-    function unifyPath(path: string, endWithSlash?: boolean): string
+    function dropStartSlash(path: string): string
 
     /**
-     * @private 获得跳转后的新路径，用于非history模式的路由跳转
-     * @param currentPath
-     * @param navigateTo
-     * @param base
+     * 去掉末尾的"/"，执行该方法前需要先执行{@link unifySlash}
+     * @param path
      */
-    function navigatePath(currentPath: string, navigateTo: string | URL, base: string): string
+    function dropEndSlash(path: string): string
 
     /**
-     * @private 从前端截断路径
-     * @param fullPath
-     * @param truncation
+     * 统一path格式，去掉前后的"/"
+     * @param path
+     */
+    function unifyPath(path: string): string
+
+    /**
+     * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}
+     * @param path
+     */
+    function dropLastPortion(path: string): string
+
+    /**
+     * 拼接路径
+     * @param paths
+     */
+    function joinPath(...paths: string[]): string
+
+    /**
+     * 生成跳转路径
+     * @param to
+     * @param fromPath
+     */
+    function resolvePath(to: To, fromPath?: string | null): string
+
+    /**
+     * 从前端截断路径
+     * @param referencePath
+     * @param routePath
      * @returns {string} 返回截断后的子路径
      * @returns {null} 如果路径不匹配，返回null
      */
-    function truncatePath(fullPath: string, truncation: string | RegExp | undefined): string | null
+    function truncatePath(referencePath: string, routePath: string | RegExp | undefined): string | null
 
     /**
      * @private 读取动态路径参数，并得到替换后的路径
