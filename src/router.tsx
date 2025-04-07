@@ -32,7 +32,7 @@ export function Router({
     }, [])
 
     const [hash, setHash] = useState(() => mode === 'hash'
-        ? location.hash.replace(/^#/, '') || '/'
+        ? location.hash.slice(1) || '/'
         : ''
     )
 
@@ -104,6 +104,9 @@ export function Router({
             }
         } else {
             // typeof a === 'string' || a instanceof URL
+            if (to instanceof URL && to.origin !== location.origin) {
+                throw Error(`Cannot navigate different origin from "${location.origin}" to "${to.origin}".`)
+            }
             if (mode === 'history') {
                 history.scrollRestoration = scrollRestore ? 'auto' : 'manual'
                 const method = replace ? history.replaceState : history.pushState

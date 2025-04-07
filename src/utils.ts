@@ -1,4 +1,4 @@
-import {ILocation, To} from '../index'
+import {ILocation, To} from '..'
 import {Dispatch, RefObject, SetStateAction, useCallback, useRef, useState} from 'react'
 
 /**
@@ -102,7 +102,22 @@ export function unifyPath(path: string) {
 }
 
 /**
- * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}
+ * 去掉路径的search和hash
+ * @param path
+ */
+function dropSearchAndHash(path: string) {
+    const drop = (path: string, symbol: '$' | '#') => {
+        const index = path.indexOf(symbol)
+        if (index > -1) {
+            return path.slice(0, index)
+        }
+        return path
+    }
+    return drop(drop(path, '$'), '#')
+}
+
+/**
+ * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}和{@link dropSearchAndHash}
  * @param path
  */
 export function dropLastPortion(path: string) {
@@ -115,7 +130,11 @@ export function dropLastPortion(path: string) {
  */
 export function joinPath(...paths: string[]) {
     const fn = (prev: string, next: string) => {
+        if (/^[a-zA-Z]+:/.test(next)) {
+            return next
+        }
         prev = unifySlash(prev)
+        prev = dropSearchAndHash(prev)
         next = unifySlash(next)
         if (!prev) {
             return next
@@ -123,8 +142,9 @@ export function joinPath(...paths: string[]) {
         if (!next) {
             return prev
         }
-        // "/"开头，开启新路径
-        if (next[0] === '/') {
+        const [l] = next[0]
+        // 特殊开头，开启新路径
+        if (l === '/') {
             return next
         }
         // ".."或"../"开头，去掉prev的前一段后递归
@@ -135,7 +155,7 @@ export function joinPath(...paths: string[]) {
             )
         }
         // "."或"./"开头，直接递归
-        if (next[0] === '.') {
+        if (l === '.') {
             return fn(prev, next.replace(/^\.\/?/, ''))
         }
         return `${dropEndSlash(prev)}/${dropEndSlash(next)}`
@@ -149,19 +169,22 @@ export function joinPath(...paths: string[]) {
  * @param fromPath
  */
 export function resolvePath(to: To, fromPath?: string | null) {
-    if (typeof to === 'string') {
-        to = unifySlash(to)
-    } else {
-        // to instanceof URL
-        if (to.origin !== location.origin) {
-            throw Error(`Cannot navigate different origin from "${location.origin}" to "${to.origin}".`)
-        }
-        to = to.pathname + to.search
+    if (to instanceof URL) {
+        return to.href
     }
-    return !fromPath || to[0] === '/'
-        ? to
-        // 去掉fromPath的最后一段，再进行拼接
-        : joinPath(dropLastPortion(fromPath), to)
+    if (/^[a-zA-Z]+:/.test(to)) {
+        return to
+    }
+    to = unifySlash(to)
+    fromPath = fromPath && dropSearchAndHash(fromPath)
+    const [l] = to
+    if (!fromPath || l === '/') {
+        return to
+    }
+    if (l !== '?' && l !== '#') {
+        fromPath = dropLastPortion(fromPath)
+    }
+    return joinPath(fromPath, to)
 }
 
 /**

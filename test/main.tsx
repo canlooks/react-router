@@ -7,7 +7,7 @@ createRoot(document.getElementById('app')!).render(<App/>)
 
 const routes: RouteItem[] = [
     {
-        path: '/',
+        path: '/layout/index',
         element: <Layout/>,
         children: [
             {
@@ -24,7 +24,7 @@ const routes: RouteItem[] = [
 
 function App() {
     return (
-        <Router mode="hash">
+        <Router>
             <Routes routes={routes}/>
         </Router>
     )
@@ -33,6 +33,10 @@ function App() {
 function Layout() {
     useEffect(() => {
         console.log('layout re-render')
+        const popstate = () => {
+            console.log(37, location.hash)
+        }
+        addEventListener('pushstate', popstate)
     }, [])
 
     const {navigate} = useRouter()
@@ -41,12 +45,13 @@ function Layout() {
         <>
             <Outlet/>
             <div>
-                <button onClick={() => navigate('a')}>a</button>
-                <button onClick={() => navigate('b')}>b</button>
+                <button onClick={() => navigate('?a=a')}>a</button>
+                <button onClick={() => navigate('?b=b')}>b</button>
             </div>
             <div>
-                <Link to="/">a</Link>
-                <Link to="b">b</Link>
+                <Link to="#a">a</Link>
+                <Link to="?b=b">b</Link>
+                <a href="/layout/index/b">b</a>
             </div>
         </>
     )
