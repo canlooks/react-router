@@ -70,7 +70,7 @@ export function Routes({routes, children}: RoutesProps) {
         const recurve = (routes = routesStructure, referencePath = currentPathname, parentStack: MatchedRouteItem[] = []): MatchedRouteItem[] | null => {
             let currentStack: MatchedRouteItem[] | null = null
             const matched = routes.some(routeItem => {
-                let {path, children, extendable} = routeItem
+                let {path, pattern, children, extendable} = routeItem
 
                 let endWithAsterisk = false
                 if (typeof path === 'string') {
@@ -94,11 +94,11 @@ export function Routes({routes, children}: RoutesProps) {
                             // "/*"结尾，用endWithAsterisk记录后移除"/*"
                             path = path.replace(/\/\*+$/, '')
                         }
-                        path = globToReg(path)
+                        pattern = globToReg(path)
                     }
                 }
 
-                const subPath = truncatePath(referencePath, path)
+                const subPath = truncatePath(referencePath, pattern || path)
                 if (subPath === null) {
                     return false
                 }

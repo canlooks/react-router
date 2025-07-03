@@ -97,7 +97,8 @@ declare namespace Router {
      */
 
     interface RouteItem extends Record<any, any> {
-        path?: string | RegExp
+        path?: string
+        pattern?: RegExp
         element?: ReactNode
         children?: RouteItem[]
         /** Whether extending sub routes is allowed {@default false} */
@@ -154,7 +155,7 @@ declare namespace Router {
      * ---------------------------------------------------------------
      * link
      */
-    
+
     type LinkComponentType = {
         href?: string
         onClick(e: React.MouseEvent<HTMLAnchorElement>): void
@@ -166,7 +167,7 @@ declare namespace Router {
     }
 
     function Link(props: LinkProps): ReactElement
-    
+
     function useResolvePath(to?: To): string
 
     /**
