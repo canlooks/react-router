@@ -22,19 +22,29 @@ export function Router({
     }
 
     useEffect(() => {
-        if (mode !== 'history') {
-            return
+        if (mode === 'history') {
+            addEventListener('popstate', updateClonedLocation)
+            return () => {
+                removeEventListener('popstate', updateClonedLocation)
+            }
         }
-        addEventListener('popstate', updateClonedLocation)
-        return () => {
-            removeEventListener('popstate', updateClonedLocation)
+        if (mode === 'hash') {
+            addEventListener('hashchange', updateClonedLocation)
+            return () => {
+                removeEventListener('hashchange', updateClonedLocation)
+            }
         }
     }, [])
 
-    const [hash, setHash] = useState(() => mode === 'hash'
-        ? location.hash.slice(1) || '/'
-        : ''
-    )
+    const hash = useMemo(() => {
+        return clonedLocation.current.hash.slice(1) || '/'
+    }, [clonedLocation.current.hash])
+
+    const updateHash = (hash: string) => {
+        if (mode === 'hash') {
+            location.hash = hash
+        }
+    }
 
     const [stack, setStack] = useState(() => mode === 'hash'
         ? [hash]
@@ -42,14 +52,6 @@ export function Router({
     )
 
     const [stackIndex, setStackIndex] = useState(0)
-
-    const updateHash = (hash: string) => {
-        if (mode === 'hash') {
-            location.hash = hash
-            updateClonedLocation()
-        }
-        setHash(hash)
-    }
 
     // 不同模式下的location对象
     const locationInMode = useMemo(() => {
@@ -75,7 +77,7 @@ export function Router({
     // 截断base后的pathname
     const pathname = useMemo(() => {
         return '/' + truncatePath(locationInMode.pathname, base)
-    }, [locationInMode, base])
+    }, [locationInMode.pathname, base])
 
     /**
      * ------------------------------------------------------------------
@@ -107,6 +109,7 @@ export function Router({
             if (to instanceof URL && to.origin !== location.origin) {
                 throw Error(`Cannot navigate different origin from "${location.origin}" to "${to.origin}".`)
             }
+
             if (mode === 'history') {
                 history.scrollRestoration = scrollRestore ? 'auto' : 'manual'
                 const method = replace ? history.replaceState : history.pushState

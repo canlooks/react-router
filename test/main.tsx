@@ -7,7 +7,7 @@ createRoot(document.getElementById('app')!).render(<App/>)
 
 const routes: RouteItem[] = [
     {
-        path: '/layout/index',
+        path: '/',
         element: <Layout/>,
         children: [
             {
@@ -24,7 +24,7 @@ const routes: RouteItem[] = [
 
 function App() {
     return (
-        <Router>
+        <Router mode="hash">
             <Routes routes={routes}/>
         </Router>
     )
@@ -45,8 +45,9 @@ function Layout() {
         <>
             <Outlet/>
             <div>
-                <button onClick={() => navigate('?a=a')}>a</button>
-                <button onClick={() => navigate('?b=b')}>b</button>
+                <button onClick={() => navigate('/')}>a</button>
+                <button onClick={() => navigate('/b')}>b</button>
+                <button onClick={() => location.hash = '#/b'}>b`</button>
             </div>
             <div>
                 <Link to="#a">a</Link>
