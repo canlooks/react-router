@@ -1,4 +1,4 @@
-import React, {Dispatch, JSX, RefObject, ReactElement, ReactNode, SetStateAction, ComponentType} from 'react'
+import {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction, ElementType, ComponentPropsWithRef} from 'react'
 
 declare namespace Router {
     /**
@@ -51,9 +51,9 @@ declare namespace Router {
     }
 
     type RouterProps = {
-        /** default `history` */
+        /** default is `history` */
         mode?: Mode
-        /** default `/` */
+        /** default is `/` */
         base?: string
         children?: ReactNode
     }
@@ -72,7 +72,6 @@ declare namespace Router {
      */
 
     type RoutesProps = {
-        /** suggest to use routes */
         routes?: RouteItem[]
         /** JSX style routes definition */
         children?: ReactElement | ReactElement[]
@@ -101,7 +100,7 @@ declare namespace Router {
         pattern?: RegExp
         element?: ReactNode
         children?: RouteItem[]
-        /** Whether extending sub routes is allowed {@default false} */
+        /** Whether extending sub routes is allowed default is `false` */
         extendable?: boolean
     }
 
@@ -114,6 +113,10 @@ declare namespace Router {
         children?: ReactNode
     }
 
+    /**
+     * JSX style for {@link RoutesProps.routes} prop
+     * @param props
+     */
     function Route(props: RouteProps): ReactElement
 
     /**
@@ -156,17 +159,11 @@ declare namespace Router {
      * link
      */
 
-    type LinkComponentType = {
-        href?: string
-        onClick(e: React.MouseEvent<HTMLAnchorElement>): void
-    }
+    type MergeProps<P1, P2> = P1 & Omit<P2, keyof P1>
 
-    interface LinkProps extends NavigateProps, Partial<JSX.IntrinsicElements['a']> {
-        /** custom anchor element, default is `a` */
-        component?: ComponentType<LinkComponentType> | string
-    }
+    type LinkProps<C extends ElementType = 'a'> = { component?: C } & MergeProps<NavigateProps, ComponentPropsWithRef<C>>
 
-    function Link(props: LinkProps): ReactElement
+    function Link<C extends ElementType = 'a'>(props: LinkProps<C>): ReactElement
 
     function useResolvePath(to?: To): string
 

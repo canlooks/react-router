@@ -1,6 +1,6 @@
 import {createRoot} from 'react-dom/client'
-import {useRouter, Router, Routes, Outlet, Link} from '../src'
-import {RouteItem} from '../index'
+import {useRouter, Router, Routes, Outlet, } from '../src'
+import {RouteItem, Link} from '../index'
 import {useEffect} from 'react'
 
 createRoot(document.getElementById('app')!).render(<App/>)

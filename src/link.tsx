@@ -1,5 +1,5 @@
-import {memo} from 'react'
-import {LinkComponentType, LinkProps, To} from '..'
+import React, {memo} from 'react'
+import {LinkProps, To} from '..'
 import {useRouter} from './router'
 import {joinPath, resolvePath} from './utils'
 
@@ -18,9 +18,9 @@ export const Link = memo(({
 
     const usingDelta = typeof delta === 'number'
 
-    const aProps: LinkComponentType = {
+    const aProps = {
         ...!usingDelta && {href: resolvedPath},
-        onClick(e) {
+        onClick(e: React.MouseEvent<HTMLAnchorElement>) {
             props.onClick?.(e)
             if (usingDelta) {
                 navigate(delta)
