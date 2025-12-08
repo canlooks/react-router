@@ -1,22 +1,18 @@
 import {createRoot} from 'react-dom/client'
-import {useRouter, Router, Routes, Outlet, } from '../src'
-import {RouteItem, Link} from '../index'
+import {useRouter, Router, Routes, Outlet, useParams, useNavigate, useQuery} from '../src'
 import {useEffect} from 'react'
+import {RouteItem} from '../index'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
 const routes: RouteItem[] = [
     {
-        path: '/',
-        element: <Layout/>,
+        path: '/:name',
+        element: <Entry/>,
         children: [
             {
-                path: '',
-                element: <div>index</div>
-            },
-            {
-                path: 'b',
-                element: <div>page b</div>,
+                path: '*',
+                element: <Layout/>
             }
         ]
     }
@@ -24,36 +20,65 @@ const routes: RouteItem[] = [
 
 function App() {
     return (
-        <Router mode="hash">
+        <Router>
             <Routes routes={routes}/>
         </Router>
     )
 }
 
-function Layout() {
-    useEffect(() => {
-        console.log('layout re-render')
-        const popstate = () => {
-            console.log(37, location.hash)
-        }
-        addEventListener('pushstate', popstate)
-    }, [])
+function Entry() {
+    const {name} = useParams()
 
-    const {navigate} = useRouter()
+    console.log(name)
 
     return (
         <>
             <Outlet/>
-            <div>
-                <button onClick={() => navigate('/')}>a</button>
-                <button onClick={() => navigate('/b')}>b</button>
-                <button onClick={() => location.hash = '#/b'}>b`</button>
-            </div>
-            <div>
-                <Link to="#a">a</Link>
-                <Link to="?b=b">b</Link>
-                <a href="/layout/index/b">b</a>
-            </div>
+        </>
+    )
+}
+
+function Layout() {
+    const query = useQuery()
+    const navigate = useNavigate()
+    const {pathname} = useRouter()
+
+    useEffect(() => {
+        if (query.get('a') === '1') {
+            // navigate(pathname, {replace: true})
+            navigate('/change', {replace: true})
+        }
+    }, [])
+    return (
+        <>
+            <Router base="/%E7%A2%B3%E5%8C%96%E7%A1%85%E7%94%9F%E4%BA%A7%E5%95%86">
+                <Routes routes={[
+                    {
+                        path: '/ok',
+                        element: <Ok/>
+                    },
+                    {
+                        path: '/notOk',
+                        element: (
+                            <>
+                                <h1>notOk</h1>
+                                <button onClick={() => navigate(-1)}>back</button>
+                            </>
+                        )
+                    }
+                ]}/>
+            </Router>
+        </>
+    )
+}
+
+function Ok() {
+    const navigate = useNavigate()
+
+    return (
+        <>
+            <h1>OJBK</h1>
+            <button onClick={() => navigate('/notOk')}>goto notOk</button>
         </>
     )
 }

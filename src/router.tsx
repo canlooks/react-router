@@ -1,6 +1,6 @@
 import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
-import {cloneLocation, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
+import {cloneLocation, dropStartSlash, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
 
 export const RouterContext = createContext({} as IRouterContext)
 
@@ -15,10 +15,15 @@ export function Router({
 }: RouterProps) {
     base = '/' + unifyPath(base)
 
+    const parentRouter = useRouter()
+
     const [clonedLocation, setClonedLocation] = useSyncState(() => cloneLocation())
 
     const updateClonedLocation = () => {
-        isLocationChanged(clonedLocation.current) && setClonedLocation(cloneLocation())
+        if (isLocationChanged(clonedLocation.current)) {
+            setClonedLocation(cloneLocation())
+            parentRouter.updateClonedLocation?.()
+        }
     }
 
     useEffect(() => {
@@ -43,6 +48,7 @@ export function Router({
     const updateHash = (hash: string) => {
         if (mode === 'hash') {
             location.hash = hash
+            parentRouter.updateHash?.(hash)
         }
     }
 
@@ -70,15 +76,13 @@ export function Router({
 
     const params = useRef<Record<string, string>>({})
 
-    useMemo(() => {
-        params.current = {}
-    }, [locationInMode])
-
     // 截断base后的pathname
     const pathname = useMemo(() => {
+        // pathname改变需要清空params重新装填
+        params.current = {}
+        console.log(83, locationInMode.pathname, base)
         return '/' + truncatePath(locationInMode.pathname, base)
     }, [locationInMode.pathname, base])
-
     /**
      * ------------------------------------------------------------------
      * 路由跳转方法
@@ -117,7 +121,7 @@ export function Router({
                     to = unifySlash(to)
                     method.call(history, state, '', to[0] === '/'
                         // "/"开头需拼接base
-                        ? joinPath(base, to)
+                        ? joinPath(base, dropStartSlash(to))
                         : to
                     )
                 } else {
@@ -172,16 +176,23 @@ export function Router({
             back,
             forward,
             state: innerState,
-            setState
+            setState,
+
+            updateClonedLocation,
+            updateHash
         }}>
             {children}
         </RouterContext>
     )
 }
 
-export function useQuery() {
+export function useSearchParams() {
     const {location: {search}} = useRouter()
     return new URLSearchParams(search)
+}
+
+export function useQuery() {
+    return useSearchParams()
 }
 
 export function useParams() {

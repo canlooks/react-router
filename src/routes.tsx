@@ -29,15 +29,15 @@ export function useCurrentRoute(): MatchedRouteItem | null {
 export function Routes({routes, children}: RoutesProps) {
     const routesStructure = useMemo(() => {
         if (routes) {
-            const recurve = (routes: RouteItem[]): RouteItem[] => {
+            const recurse = (routes: RouteItem[]): RouteItem[] => {
                 return routes.map(route => ({
                     path: typeof route.path === 'string' ? unifySlash(route.path) : route.path,
                     ...route
                 }))
             }
-            return recurve(routes)
+            return recurse(routes)
         }
-        const recurve = (children: ReactNode): RouteItem[] => {
+        const recurse = (children: ReactNode): RouteItem[] => {
             return Children.toArray(children).flatMap(child => {
                 if (!isValidElement(child)) {
                     return []
@@ -47,12 +47,12 @@ export function Routes({routes, children}: RoutesProps) {
                     ...props,
                     path: typeof props.path === 'string' ? unifySlash(props.path) : props.path,
                     ...props.children && {
-                        children: recurve(props.children)
+                        children: recurse(props.children)
                     }
                 }
             })
         }
-        return recurve(children)
+        return recurse(children)
     }, [routes, children])
 
     const {pathname, params} = useRouter()
@@ -67,7 +67,7 @@ export function Routes({routes, children}: RoutesProps) {
             return []
         }
 
-        const recurve = (routes = routesStructure, referencePath = currentPathname, parentStack: MatchedRouteItem[] = []): MatchedRouteItem[] | null => {
+        const recurse = (routes = routesStructure, referencePath = currentPathname, parentStack: MatchedRouteItem[] = []): MatchedRouteItem[] | null => {
             let currentStack: MatchedRouteItem[] | null = null
             const matched = routes.some(routeItem => {
                 let {path, pattern, children, extendable} = routeItem
@@ -106,7 +106,7 @@ export function Routes({routes, children}: RoutesProps) {
                 const next = () => {
                     currentStack = [...parentStack]
                     if (children?.length) {
-                        currentStack = recurve(children, subPath, currentStack)
+                        currentStack = recurse(children, subPath, currentStack)
                         if (!currentStack) {
                             return false
                         }
@@ -134,7 +134,7 @@ export function Routes({routes, children}: RoutesProps) {
 
             return matched ? currentStack : null
         }
-        return recurve() || []
+        return recurse() || []
     }, [currentPathname, routesStructure])
 
     return (

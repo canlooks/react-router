@@ -1,4 +1,5 @@
 import {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction, ElementType, ComponentPropsWithRef} from 'react'
+import {useSearchParams} from './src'
 
 declare namespace Router {
     /**
@@ -34,7 +35,7 @@ declare namespace Router {
         base: string
         location: ILocation
         /** The path used to match routes(truncated by {@link base}) */
-        pathname: string | null
+        pathname: string
 
         replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
 
@@ -48,6 +49,11 @@ declare namespace Router {
         setState: Dispatch<SetStateAction<any>>
 
         params: Record<string, string>
+
+        /** @private */
+        updateClonedLocation?(): void
+        /** @private */
+        updateHash?(hash: string): void
     }
 
     type RouterProps = {
@@ -62,6 +68,8 @@ declare namespace Router {
 
     function useRouter(): RouterContext
 
+    function useSearchParams(): URLSearchParams
+    /** @alias {@link useSearchParams} */
     function useQuery(): URLSearchParams
 
     function useParams(): Record<string, string>

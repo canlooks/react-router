@@ -176,7 +176,9 @@ export function resolvePath(to: To, fromPath?: string | null) {
         return to
     }
     to = unifySlash(to)
-    fromPath = fromPath && dropSearchAndHash(fromPath)
+    if (fromPath) {
+        fromPath = dropSearchAndHash(fromPath)
+    }
     const [l] = to
     if (!fromPath || l === '/') {
         return to

@@ -1,7 +1,7 @@
 import React, {memo} from 'react'
 import {LinkProps, To} from '..'
 import {useRouter} from './router'
-import {joinPath, resolvePath} from './utils'
+import {dropStartSlash, joinPath, resolvePath} from './utils'
 
 export const Link = memo(({
     component: Component = 'a',
@@ -46,7 +46,7 @@ export function useResolvePath(to?: To) {
     }
     const resolvedPath = resolvePath(to, pathname)
     if (mode === 'history') {
-        return joinPath(base, resolvedPath)
+        return joinPath(base, dropStartSlash(resolvedPath))
     }
     return '#' + resolvedPath
 }
