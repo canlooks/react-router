@@ -1,84 +1,84 @@
 import {createRoot} from 'react-dom/client'
-import {useRouter, Router, Routes, Outlet, useParams, useNavigate, useQuery} from '../src'
-import {useEffect} from 'react'
+import {Router, Routes, Outlet, useParams} from '../src'
 import {RouteItem} from '../index'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
 const routes: RouteItem[] = [
     {
-        path: '/:name',
-        element: <Entry/>,
+        path: '/',
+        element: <Layout/>,
         children: [
             {
-                path: '*',
-                element: <Layout/>
+                path: 'device',
+                element: <Device/>,
+                children: [
+                    {
+                        path: ':slot',
+                        element: <Slot/>,
+                        children: [
+                            {
+                                path: 'register',
+                                element: <Register/>
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
 ]
 
-function App() {
-    return (
-        <Router>
-            <Routes routes={routes}/>
-        </Router>
-    )
-}
-
-function Entry() {
-    const {name} = useParams()
-
-    console.log(name)
+function Layout() {
+    const params = useParams()
+    console.log(34, params)
 
     return (
         <>
+            <h1>Layout</h1>
             <Outlet/>
         </>
     )
 }
 
-function Layout() {
-    const query = useQuery()
-    const navigate = useNavigate()
-    const {pathname} = useRouter()
-
-    useEffect(() => {
-        if (query.get('a') === '1') {
-            // navigate(pathname, {replace: true})
-            navigate('/change', {replace: true})
-        }
-    }, [])
+function Device() {
     return (
         <>
-            <Router base="/%E7%A2%B3%E5%8C%96%E7%A1%85%E7%94%9F%E4%BA%A7%E5%95%86">
-                <Routes routes={[
-                    {
-                        path: '/ok',
-                        element: <Ok/>
-                    },
-                    {
-                        path: '/notOk',
-                        element: (
-                            <>
-                                <h1>notOk</h1>
-                                <button onClick={() => navigate(-1)}>back</button>
-                            </>
-                        )
-                    }
-                ]}/>
-            </Router>
+            <h1>Device</h1>
+            <Outlet/>
         </>
     )
 }
 
-function Ok() {
-    const navigate = useNavigate()
-
+function Slot() {
+    const params = useParams()
+    console.log(34, params)
     return (
         <>
-            <h1>OJBK</h1>
-            <button onClick={() => navigate('/notOk')}>goto notOk</button>
+            <h1>Slot</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function Register() {
+    const params = useParams()
+    console.log(34, params)
+    return (
+        <>
+            <h1>Register</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function App() {
+    return (
+        <>
+            <h1>App</h1>
+            <Router>
+                <Routes routes={routes}/>
+            </Router>
         </>
     )
 }

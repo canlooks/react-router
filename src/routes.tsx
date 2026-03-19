@@ -1,4 +1,4 @@
-import {MatchedRouteItem, RouteItem, RouteProps, RoutesProps} from '..'
+import {MatchedRouteItem, RouteItem, RoutesProps} from '..'
 import {Children, createContext, isValidElement, ReactElement, ReactNode, useContext, useMemo} from 'react'
 import {useRouter} from './router'
 import {globToReg, insertPathParams, truncatePath, unifySlash} from './utils'
@@ -22,17 +22,20 @@ export function useRouteStackIndex() {
 
 export function useCurrentRoute(): MatchedRouteItem | null {
     const stack = useRouteElementStack()
-    const consumed = useRouteStackIndex()
-    return stack[consumed] || null
+    const index = useRouteStackIndex()
+    return stack[index] || null
 }
 
 export function Routes({routes, children}: RoutesProps) {
-    const routesStructure = useMemo(() => {
+    const routesObject = useMemo(() => {
         if (routes) {
             const recurse = (routes: RouteItem[]): RouteItem[] => {
                 return routes.map(route => ({
+                    ...route,
                     path: typeof route.path === 'string' ? unifySlash(route.path) : route.path,
-                    ...route
+                    ...route.children && {
+                        children: recurse(route.children)
+                    }
                 }))
             }
             return recurse(routes)
@@ -42,7 +45,7 @@ export function Routes({routes, children}: RoutesProps) {
                 if (!isValidElement(child)) {
                     return []
                 }
-                const {props} = child as ReactElement<RouteItem & {children?: ReactNode}>
+                const {props} = child as ReactElement<RouteItem & { children?: ReactNode }>
                 return {
                     ...props,
                     path: typeof props.path === 'string' ? unifySlash(props.path) : props.path,
@@ -67,75 +70,49 @@ export function Routes({routes, children}: RoutesProps) {
             return []
         }
 
-        const recurse = (routes = routesStructure, referencePath = currentPathname, parentStack: MatchedRouteItem[] = []): MatchedRouteItem[] | null => {
-            let currentStack: MatchedRouteItem[] | null = null
-            const matched = routes.some(routeItem => {
-                let {path, pattern, children, extendable} = routeItem
+        const stack: MatchedRouteItem[] = []
+        const recuse = (routes: RouteItem[], referencePath: string) => {
+            for (let i = 0, {length} = routes; i < length; i++) {
+                const route = routes[i]
+                let {path, pattern, children} = route
 
-                let endWithAsterisk = false
                 if (typeof path === 'string') {
                     if (path[0] === '/') {
                         // "/"开头使用pathname匹配
-                        referencePath = pathname!
+                        referencePath = pathname
                     }
 
                     // 路径中存在动态参数
                     if (path.includes(':')) {
                         const replacedPath = insertPathParams(params, path, referencePath)
                         if (replacedPath === null) {
-                            return false
+                            continue
                         }
                         // 得到替换后的路径
                         path = replacedPath
                     } else if (/[*?]+/.test(path)) {
                         // 路径中存在通配符
-                        endWithAsterisk = /\/\*+$/.test(path)
-                        if (endWithAsterisk) {
-                            // "/*"结尾，用endWithAsterisk记录后移除"/*"
-                            path = path.replace(/\/\*+$/, '')
-                        }
                         pattern = globToReg(path)
                     }
                 }
 
                 const subPath = truncatePath(referencePath, pattern || path)
                 if (subPath === null) {
-                    return false
+                    continue
                 }
 
-                const next = () => {
-                    currentStack = [...parentStack]
-                    if (children?.length) {
-                        currentStack = recurse(children, subPath, currentStack)
-                        if (!currentStack) {
-                            return false
-                        }
-                    }
-                    currentStack.unshift({
-                        ...routeItem,
-                        _subPath: subPath!
-                    })
-                    return true
-                }
+                stack.push({
+                    ...route,
+                    _subPath: subPath
+                })
+                children?.length && recuse(children, subPath)
 
-                // 有子路由，或可扩展的路由时，继续查找
-                if (children?.length || extendable) {
-                    return next()
-                }
-
-                if (endWithAsterisk && subPath) {
-                    // "/*"结尾，若有剩余的subPath则继续
-                    return next()
-                }
-
-                // 还有剩余subPath，表示不匹配
-                return subPath ? false : next()
-            })
-
-            return matched ? currentStack : null
+                break
+            }
         }
-        return recurse() || []
-    }, [currentPathname, routesStructure])
+        recuse(routesObject, currentPathname)
+        return stack
+    }, [currentPathname, routesObject])
 
     return (
         <RouteStackContext value={routeStack}>
@@ -144,8 +121,4 @@ export function Routes({routes, children}: RoutesProps) {
             </RouteStackIndexContext>
         </RouteStackContext>
     )
-}
-
-export function Route(props: RouteProps) {
-    return props.children
 }

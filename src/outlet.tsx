@@ -19,8 +19,8 @@ export function Outlet() {
 export function useCurrentBase() {
     const {pathname} = useRouter()
     const currentRoute = useCurrentRoute()
-    if (currentRoute?.subPath) {
-        return pathname.replace(RegExp(`${currentRoute.subPath}$`), '')
+    if (currentRoute?._subPath) {
+        return pathname.replace(RegExp(`${currentRoute._subPath}$`), '')
     }
     return pathname
 }

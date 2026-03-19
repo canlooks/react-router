@@ -108,8 +108,6 @@ declare namespace Router {
         pattern?: RegExp
         element?: ReactNode
         children?: RouteItem[]
-        /** Whether extending sub routes is allowed default is `false` */
-        extendable?: boolean
     }
 
     interface MatchedRouteItem extends RouteItem {

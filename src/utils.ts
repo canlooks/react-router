@@ -227,10 +227,9 @@ export function insertPathParams(params: Record<string, string>, routePath: stri
     }
     for (let i = 0, {length} = paramKeys; i < length; i++) {
         const key = paramKeys[i]
-        const value = paramValues[i]
         if (key[0] === ':') {
             // 保存动态参数并替换动态路径
-            params[key.slice(1)] = paramKeys[i] = value
+            params[key.slice(1)] = paramKeys[i] = paramValues[i]
         }
     }
     return paramKeys.join('/')

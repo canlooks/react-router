@@ -80,7 +80,6 @@ export function Router({
     const pathname = useMemo(() => {
         // pathname改变需要清空params重新装填
         params.current = {}
-        console.log(83, locationInMode.pathname, base)
         return '/' + truncatePath(locationInMode.pathname, base)
     }, [locationInMode.pathname, base])
     /**
