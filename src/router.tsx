@@ -19,24 +19,28 @@ export function Router({
 
     const [clonedLocation, setClonedLocation] = useSyncState(() => cloneLocation())
 
-    const updateClonedLocation = () => {
+    const locationChange = () => {
         if (isLocationChanged(clonedLocation.current)) {
             setClonedLocation(cloneLocation())
-            parentRouter.updateClonedLocation?.()
+            return true
         }
+    }
+
+    const updateClonedLocation = () => {
+        locationChange() && parentRouter.updateClonedLocation?.()
     }
 
     useEffect(() => {
         if (mode === 'history') {
-            addEventListener('popstate', updateClonedLocation)
+            addEventListener('popstate', locationChange)
             return () => {
-                removeEventListener('popstate', updateClonedLocation)
+                removeEventListener('popstate', locationChange)
             }
         }
         if (mode === 'hash') {
-            addEventListener('hashchange', updateClonedLocation)
+            addEventListener('hashchange', locationChange)
             return () => {
-                removeEventListener('hashchange', updateClonedLocation)
+                removeEventListener('hashchange', locationChange)
             }
         }
     }, [])
@@ -82,6 +86,7 @@ export function Router({
         params.current = {}
         return '/' + truncatePath(locationInMode.pathname, base)
     }, [locationInMode.pathname, base])
+
     /**
      * ------------------------------------------------------------------
      * 路由跳转方法
