@@ -1,6 +1,13 @@
 import {isUnset} from './utils'
-import {useRouteStack} from './routes'
 import {createContext, useContext} from 'react'
+import {RouteItem} from '../index'
+
+export const RouteStack = createContext<RouteItem[]>([])
+
+export function useRouteStack() {
+    return useContext(RouteStack)
+}
+
 
 export function useRouteLayoutStack() {
     return useRouteStack().filter((route, index, stack) => {

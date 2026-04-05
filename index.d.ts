@@ -60,7 +60,15 @@ declare namespace Router {
         mode?: Mode
         /** default is `/` */
         base?: string
-        children?: ReactNode
+        entry: RouteItem
+        /** Render when all routes not match. */
+        notFound?: ReactNode
+    }
+
+    type RouteItem = {
+        layout?: ReactNode
+        page?: ReactNode
+        children?: Record<string, RouteItem>
     }
 
     function Router(props: RouterProps): ReactElement
@@ -75,29 +83,10 @@ declare namespace Router {
 
     /**
      * ---------------------------------------------------------------
-     * Routes
-     */
-
-    type RouteItem = {
-        layout?: ReactNode
-        page?: ReactNode
-        children?: Record<string, RouteItem>
-    }
-
-    type RoutesProps = {
-        entry: RouteItem
-        /** Render when all routes not match. */
-        notFound?: ReactNode
-    }
-
-    function Routes(props: RoutesProps): ReactElement
-
-    function useRouteStack(): RouteItem[]
-
-    /**
-     * ---------------------------------------------------------------
      * outlet
      */
+
+    function useRouteStack(): RouteItem[]
 
     function useRouteLayoutStack(): RouteItem[]
 

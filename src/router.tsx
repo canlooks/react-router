@@ -1,6 +1,7 @@
-import {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react'
+import {createContext, memo, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
 import {cloneLocation, dropStartSlash, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
+import {Routes} from './routes'
 
 export const RouterContext = createContext({} as IRouterContext)
 
@@ -8,11 +9,12 @@ export function useRouter() {
     return useContext(RouterContext)
 }
 
-export function Router({
+export const Router = memo(({
     mode = 'history',
     base = '/',
-    children
-}: RouterProps) {
+    entry,
+    notFound
+}: RouterProps) => {
     base = '/' + unifyPath(base)
 
     const parentRouter = useRouter()
@@ -185,10 +187,10 @@ export function Router({
             updateClonedLocation,
             updateHash
         }}>
-            {children}
+            <Routes entry={entry} notFound={notFound}/>
         </RouterContext>
     )
-}
+})
 
 export function useSearchParams() {
     const {location: {search}} = useRouter()

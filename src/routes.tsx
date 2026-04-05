@@ -1,16 +1,13 @@
-import {createContext, memo, useContext, useMemo} from 'react'
-import {RouteItem, RoutesProps} from '../index'
+import {memo, ReactNode, useMemo} from 'react'
+import {RouteItem} from '../index'
 import {useRouter} from './router'
 import {isUnset} from './utils'
-import {Outlet, RouteLayoutStackIndex} from './outlet'
+import {Outlet, RouteLayoutStackIndex, RouteStack} from './outlet'
 
-const RouteStack = createContext<RouteItem[]>([])
-
-export function useRouteStack() {
-    return useContext(RouteStack)
-}
-
-export const Routes = memo(({entry, notFound}: RoutesProps) => {
+export const Routes = memo(({entry, notFound}: {
+    entry: RouteItem
+    notFound?: ReactNode
+}) => {
     const {pathname, params} = useRouter()
 
     const routeStack = useMemo(() => {
