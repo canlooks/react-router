@@ -1,75 +1,97 @@
 import {createRoot} from 'react-dom/client'
-import {Router, Routes, Outlet, useParams} from '../src'
-import {RouteItem} from '../index'
+import {Outlet, Router, Routes, useParams} from '../src'
+import {RouteItem, } from '../index'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
-const routes: RouteItem[] = [
-    {
-        path: '/',
-        element: <Layout/>,
-        children: [
-            {
-                path: 'device',
-                element: <Device/>,
-                children: [
-                    {
-                        path: ':slot',
-                        element: <Slot/>,
-                        children: [
-                            {
-                                path: 'register',
-                                element: <Register/>
+function AppLayout() {
+    const params = useParams()
+
+    console.log('params', params)
+    return (
+        <>
+            <h1>app layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function GroupLayout() {
+    return (
+        <>
+            <h1>group layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function IndexLayout() {
+    return (
+        <>
+            <h1>index layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function SubLayout() {
+    const params = useParams()
+
+    console.log('params', params)
+
+    return (
+        <>
+            <h1>sub layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function AboutLayout() {
+    return (
+        <>
+            <h1>about layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+const routes: RouteItem = {
+    layout: <AppLayout/>,
+    page: 'app page',
+    children: {
+        ['#group']: {
+            layout: <GroupLayout/>,
+            children: {
+                ['index']: {
+                    layout: <IndexLayout/>,
+                    page: 'index page',
+                    children: {
+                        [':name']: {
+                            layout: <SubLayout/>,
+                            children: {
+                                ['about']: {
+                                    layout: <AboutLayout/>,
+                                    page: 'about page'
+                                }
                             }
-                        ]
+                        }
                     }
-                ]
+                },
+                ['**']: {
+                    page: 'redirect page'
+                }
             }
-        ]
+        },
+        ['#group2']: {
+            layout: 'group2 layout',
+            children: {
+                ['sub']: {
+                    page: 'sub page'
+                }
+            }
+        }
     }
-]
-
-function Layout() {
-    const params = useParams()
-    console.log(34, params)
-
-    return (
-        <>
-            <h1>Layout</h1>
-            <Outlet/>
-        </>
-    )
-}
-
-function Device() {
-    return (
-        <>
-            <h1>Device</h1>
-            <Outlet/>
-        </>
-    )
-}
-
-function Slot() {
-    const params = useParams()
-    console.log(34, params)
-    return (
-        <>
-            <h1>Slot</h1>
-            <Outlet/>
-        </>
-    )
-}
-
-function Register() {
-    const params = useParams()
-    console.log(34, params)
-    return (
-        <>
-            <h1>Register</h1>
-            <Outlet/>
-        </>
-    )
 }
 
 function App() {
@@ -77,7 +99,7 @@ function App() {
         <>
             <h1>App</h1>
             <Router>
-                <Routes routes={routes}/>
+                <Routes entry={routes}/>
             </Router>
         </>
     )

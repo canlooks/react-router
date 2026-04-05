@@ -49,7 +49,16 @@ export function cloneLocation(): ILocation {
  * @param value
  */
 export function strOrNum(value: any): value is string | number {
-    return ({string: true, number: true} as any)[typeof value] || false
+    const valueType = typeof value
+    return valueType === 'string' || valueType === 'number'
+}
+
+/**
+ * 判断某个类型为`ReactNode`的变量是否"无法渲染"
+ * @param it
+ */
+export function isUnset(it: any): it is undefined | null | false {
+    return typeof it === 'undefined' || it === null || it === false
 }
 
 /**
@@ -113,7 +122,8 @@ function dropSearchAndHash(path: string) {
         }
         return path
     }
-    return drop(drop(path, '$'), '#')
+    path = drop(path, '$')
+    return drop(path, '#')
 }
 
 /**
@@ -142,7 +152,7 @@ export function joinPath(...paths: string[]) {
         if (!next) {
             return prev
         }
-        const [l] = next[0]
+        const [l] = next
         // 特殊开头，开启新路径
         if (l === '/') {
             return next
@@ -191,66 +201,22 @@ export function resolvePath(to: To, fromPath?: string | null) {
 
 /**
  * 从前端截断路径
- * @param referencePath
- * @param routePath
+ * @param currentPath
+ * @param scissor
  * @returns {string} 返回截断后的子路径
  * @returns {null} 如果路径不匹配，返回null
  */
-export function truncatePath(referencePath: string, routePath: string | RegExp | undefined): string | null {
-    if (routePath instanceof RegExp) {
-        routePath = routePath.source.replace(/^\^?/, '').replace(/\$?$/, '')
+export function truncatePath(currentPath: string, scissor: string | RegExp | undefined): string | null {
+    if (scissor instanceof RegExp) {
+        scissor = scissor.source.replace(/^\^?/, '').replace(/\$?$/, '')
     }
-    referencePath = unifyPath(referencePath)
-    routePath = unifyPath(routePath || '')
-    if (!routePath) {
-        return referencePath
+    currentPath = unifyPath(currentPath)
+    scissor = unifyPath(scissor || '')
+    if (!scissor) {
+        return currentPath
     }
-    if (!RegExp(`^${routePath}(/[^/]+)*$`).test(referencePath)) {
+    if (!RegExp(`^${scissor}(/[^/]+)*$`).test(currentPath)) {
         return null
     }
-    return referencePath.replace(RegExp(`^${routePath}`), '')
-}
-
-/**
- * 读取动态路径参数，并得到替换后的路径
- * @param params
- * @param routePath
- * @param referencePath
- * @returns {string} 替换后的路径
- * @returns {null} 路径不匹配会得到null
- */
-export function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null {
-    const paramKeys = unifyPath(routePath).split('/')
-    const paramValues = unifyPath(referencePath).split('/')
-    if (paramKeys.length > paramValues.length) {
-        return null
-    }
-    for (let i = 0, {length} = paramKeys; i < length; i++) {
-        const key = paramKeys[i]
-        if (key[0] === ':') {
-            // 保存动态参数并替换动态路径
-            params[key.slice(1)] = paramKeys[i] = paramValues[i]
-        }
-    }
-    return paramKeys.join('/')
-}
-
-/**
- * 将glob通配符转换为正则表达式（支持*与?）
- * @param glob
- */
-export function globToReg(glob: string) {
-    return glob === '*'
-        // 只有一个"*"时，匹配所有
-        ? RegExp('.*')
-        : RegExp(
-            glob
-                // "**"匹配所有
-                .replace(/\*\*/g, '.*')
-                // "*"匹配任意多个非"/"字符
-                .replace(/[^.]\*/g, $1 => $1[0] + '[^/]+')
-                .replace(/\*/g, '[^/]+')
-                // "?"匹配任意单个字符
-                .replace(/\?/g, '.')
-        )
+    return currentPath.replace(RegExp(`^${scissor}`), '')
 }

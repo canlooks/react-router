@@ -1,5 +1,4 @@
 import {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction, ElementType, ComponentPropsWithRef} from 'react'
-import {useSearchParams} from './src'
 
 declare namespace Router {
     /**
@@ -79,63 +78,35 @@ declare namespace Router {
      * Routes
      */
 
+    type RouteItem = {
+        layout?: ReactNode
+        page?: ReactNode
+        children?: Record<string, RouteItem>
+    }
+
     type RoutesProps = {
-        routes?: RouteItem[]
-        /** JSX style routes definition */
-        children?: ReactElement | ReactElement[]
+        entry: RouteItem
+        /** Render when all routes not match. */
+        notFound?: ReactNode
     }
 
     function Routes(props: RoutesProps): ReactElement
 
-    /** completely route stack */
-    function useRouteStack(): MatchedRouteItem[]
-
-    /** route stack only specified `element` prop. */
-    function useRouteElementStack(): MatchedRouteItem[]
-
-    function useRouteStackIndex(): number
-
-    /** current matched route item. */
-    function useCurrentRoute(): MatchedRouteItem | null
-
-    /**
-     * ---------------------------------------------------------------
-     * Route
-     */
-
-    interface RouteItem extends Record<any, any> {
-        path?: string
-        pattern?: RegExp
-        element?: ReactNode
-        children?: RouteItem[]
-    }
-
-    interface MatchedRouteItem extends RouteItem {
-        /** @private */
-        _subPath: string
-    }
-
-    interface RouteProps extends Omit<RouteItem, 'children'> {
-        children?: ReactNode
-    }
-
-    /**
-     * JSX style for {@link RoutesProps.routes} prop
-     * @param props
-     */
-    function Route(props: RouteProps): ReactElement
+    function useRouteStack(): RouteItem[]
 
     /**
      * ---------------------------------------------------------------
      * outlet
      */
 
+    function useRouteLayoutStack(): RouteItem[]
+
+    function useRouteLayoutStackIndex(): number
+
     function useOutlet(): ReactElement | null
 
     function Outlet(): ReactElement
 
-    /** Get route path from {@link RouterProps.base} to current matched. */
-    function useCurrentBase(): string | null
 
     /**
      * ---------------------------------------------------------------
@@ -258,22 +229,6 @@ declare namespace Router {
      * @returns {null} 如果路径不匹配，返回null
      */
     function truncatePath(referencePath: string, routePath: string | RegExp | undefined): string | null
-
-    /**
-     * @private 读取动态路径参数，并得到替换后的路径
-     * @param params
-     * @param routePath {@link RouteItem.path}
-     * @param referencePath
-     * @returns {string} 替换后的路径
-     * @returns {null} 路径不匹配会得到null
-     */
-    function insertPathParams(params: Record<string, string>, routePath: string, referencePath: string): string | null
-
-    /**
-     * @private 将glob通配符转换为正则表达式（支持*与?）
-     * @param glob
-     */
-    function globToReg(glob: string): RegExp
 }
 
 export = Router

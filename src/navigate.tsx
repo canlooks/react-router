@@ -20,5 +20,5 @@ export const Navigate = memo(({to, delta, ...props}: NavigateProps) => {
 })
 
 export function Redirect(props: RedirectProps) {
-    return <Navigate {...props} replace />
+    return <Navigate {...props} replace/>
 }

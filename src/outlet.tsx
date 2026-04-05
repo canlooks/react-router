@@ -1,26 +1,49 @@
-import {RouteStackIndexContext, useCurrentRoute, useRouteElementStack, useRouteStackIndex} from './routes'
-import {useRouter} from './router'
+import {isUnset} from './utils'
+import {useRouteStack} from './routes'
+import {createContext, useContext} from 'react'
+
+export function useRouteLayoutStack() {
+    return useRouteStack().filter((route, index, stack) => {
+        return !isUnset(route.layout) || index === stack.length - 1
+    })
+}
+
+export const RouteLayoutStackIndex = createContext(0)
+
+export function useRouteLayoutStackIndex() {
+    return useContext(RouteLayoutStackIndex)
+}
 
 export function useOutlet() {
-    const stack = useRouteElementStack()
-    const stackIndex = useRouteStackIndex() + 1
-    const element = stack[stackIndex]?.element
-    return element
-        ? <RouteStackIndexContext value={stackIndex}>
-            {element}
-        </RouteStackIndexContext>
-            : null
+    const index = useRouteLayoutStackIndex()
+    const layoutStack = useRouteLayoutStack()
+
+    if (index < layoutStack.length - 1) {
+        return (
+            <RouteLayoutStackIndex value={index + 1}>
+                {layoutStack[index].layout}
+            </RouteLayoutStackIndex>
+        )
+    }
+
+    if (index === layoutStack.length - 1) {
+        const {layout, page} = layoutStack[index]
+        return (
+            <RouteLayoutStackIndex value={index + 1}>
+                {layout || page}
+            </RouteLayoutStackIndex>
+        )
+    }
+
+    if (index === layoutStack.length) {
+        return (
+            <RouteLayoutStackIndex value={index + 1}>
+                {layoutStack[index - 1].page}
+            </RouteLayoutStackIndex>
+        )
+    }
 }
 
 export function Outlet() {
     return useOutlet()
-}
-
-export function useCurrentBase() {
-    const {pathname} = useRouter()
-    const currentRoute = useCurrentRoute()
-    if (currentRoute?._subPath) {
-        return pathname.replace(RegExp(`${currentRoute._subPath}$`), '')
-    }
-    return pathname
 }

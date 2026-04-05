@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
     "target": "ESNext",
     "module": "ESNext",
     "jsx": "react-jsx",
-    "moduleResolution": "Node10",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
     "noUnusedLocals": true,
@@ -16,5 +17,8 @@
   },
   "include": [
     "src/**/*"
-  ]
+  ],
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
 }
