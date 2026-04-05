@@ -14,7 +14,7 @@ export const Navigate = memo(({to, delta, ...props}: NavigateProps) => {
         typeof delta === 'number'
             ? navigate(delta)
             : typeof to !== 'undefined' && navigate(to, props)
-    }, [to, delta, Object.values(props)])
+    })
 
     return null
 })
