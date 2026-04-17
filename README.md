@@ -13,37 +13,25 @@ npm i @canlooks/react-router
 ```tsx
 import {Router, RouteItem, Routes} from '@canlooks/react-router'
 
-const routes: RouteItem[] = [
-    {path: '/', element: <Home />},
-    {path: '/about', element: <About />},
-    {path: '/user', element: <User />, children: [
-        {path: ':id', element: <UserInfo />}
-    ]}
-]
-
-function App() {
-    return (
-        <Router>
-            <Routes routes={routes}/>
-        </Router>
-    )
+const routesEntry: RouteItem = {
+    layout: <Home/>,
+    children: {
+        'about': {
+            layout: <About/>
+        },
+        'user': {
+            layout: <UserLayout/>,
+            page: <User/>,
+            children: {
+                ':id': <UserInfo/>
+            }
+        }
+    }
 }
-```
 
-or "JSX" style syntax
-
-```tsx
 function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/user" element={<User />}>
-                    <Route path=":id" element={<UserInfo />} />
-                </Route>
-            </Routes>
-        </Router>
+        <Router entry={routesEntry}/>
     )
 }
 ```
@@ -98,7 +86,7 @@ type RouterContext = {
     base: string
     location: ILocation
     /** The path used to match routes(truncated by {@link base}) */
-    pathname: string | null
+    pathname: string
 
     replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
 

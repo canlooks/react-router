@@ -56,51 +56,104 @@ function AboutLayout() {
     )
 }
 
+function Group2Layout() {
+    return (
+        <>
+            <h1>group 2 layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function Authentication() {
+    return (
+        <>
+            <h1>Authentication</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function Layout() {
+    return (
+        <>
+            <h1>Layout</h1>
+            <Outlet/>
+        </>
+    )
+}
+
+function Index() {
+    return (
+        <>
+            <h1>Index</h1>
+        </>
+    )
+}
+
 const routes: RouteItem = {
-    layout: <AppLayout/>,
-    page: 'app page',
     children: {
-        ['#group']: {
-            layout: <GroupLayout/>,
-            children: {
-                ['index']: {
-                    layout: <IndexLayout/>,
-                    page: 'index page',
-                    children: {
-                        [':name']: {
-                            layout: <SubLayout/>,
-                            children: {
-                                ['about']: {
-                                    layout: <AboutLayout/>,
-                                    page: 'about page'
-                                }
-                            }
-                        }
-                    }
-                },
-                ['**']: {
-                    page: 'redirect page'
-                }
-            }
+        'login': {
+            page: 'login'
         },
-        ['#group2']: {
-            layout: 'group2 layout',
+        '#authentication': {
+            layout: <Authentication/>,
             children: {
-                ['sub']: {
-                    page: 'sub page'
+                '#indexLayout': {
+                    layout: <Layout/>,
+                    page: <Index/>
                 }
             }
         }
     }
 }
+//
+// const routes: RouteItem = {
+//     layout: <AppLayout/>,
+//     // page: 'app page',
+//     children: {
+//         '#group': {
+//             layout: <GroupLayout/>,
+//             children: {
+//                 'index': {
+//                     layout: <IndexLayout/>,
+//                     page: 'index page',
+//                     children: {
+//                         ':name': {
+//                             layout: <SubLayout/>,
+//                             children: {
+//                                 'about': {
+//                                     layout: <AboutLayout/>,
+//                                     page: 'about page'
+//                                 }
+//                             }
+//                         }
+//                     }
+//                 },
+//                 // '**': {
+//                 //     page: 'redirect page'
+//                 // }
+//             }
+//         },
+//         '#group2': {
+//             layout: <Group2Layout/>,
+//             children: {
+//                 '#group2-1': {
+//                     page: 'group2-1 page'
+//                 },
+//                 'sub': {
+//                     page: 'sub page'
+//                 }
+//             }
+//         }
+//     }
+// }
 
 function App() {
     return (
         <>
             <h1>App</h1>
-            <Router>
-                <Routes entry={routes}/>
-            </Router>
+            <Router entry={routes}/>
         </>
     )
 }

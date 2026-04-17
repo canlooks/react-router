@@ -1,7 +1,7 @@
-import {memo, ReactNode, useMemo} from 'react'
+import {memo, ReactNode, useMemo, useRef} from 'react'
 import {RouteItem} from '../index'
 import {useRouter} from './router'
-import {isUnset} from './utils'
+import {isUnset, matchPath} from './utils'
 import {Outlet, RouteLayoutStackIndex, RouteStack} from './outlet'
 
 export const Routes = memo(({entry, notFound}: {
@@ -10,84 +10,73 @@ export const Routes = memo(({entry, notFound}: {
 }) => {
     const {pathname, params} = useRouter()
 
-    const routeStack = useMemo(() => {
-        const stack: RouteItem[] = []
+    const dynamicRoutesMap = useRef(new Map<string, RouteItem>())
 
-        const _pathname = pathname.slice(1)
-        if (!_pathname) {
-            return isUnset(entry.page) ? void 0 : [entry]
-        }
+    const exactRoutesMap = useMemo(() => {
+        dynamicRoutesMap.current.clear()
+        const exactMap = new Map<string, RouteItem>()
 
-        const portions = _pathname.split('/')
+        const recurse = (route: RouteItem, paths: string[] = [], isDynamic?: boolean) => {
+            console.log(route, paths)
+            if (!isUnset(route.page)) {
+                const map = isDynamic ? dynamicRoutesMap.current : exactMap
+                const path = '/' + paths.join('/')
 
-        const findMatchChild = (item: RouteItem, index = 0): boolean => {
-            if (index >= portions.length) {
-                return !isUnset(item.page)
+                !map.has(path) && map.set(path, route)
             }
 
-            const {children} = item
-            if (!children || !Object.keys(children).length) {
-                return false
-            }
-
-            const portion = portions[index]
-            const child = children[portion]
-            if (child) {
-                const match = findMatchChild(child, index + 1)
-                if (match) {
-                    stack.push(child)
-                    return true
-                }
-                return false
+            const {children} = route
+            if (!children) {
+                return
             }
 
             for (const path in children) {
                 const child = children[path]
-                const [l] = path
+                const [p] = path
+                child._parent = route
+                isDynamic ||= p === ':' || path === '*' || path === '**'
 
-                if (l === ':') {
-                    const match = findMatchChild(child, index + 1)
-                    if (match) {
-                        params[path.slice(1)] = portion
-                        stack.push(child)
-                        return true
-                    }
-                    continue
-                }
-                if (l === '#') {
-                    const match = findMatchChild(child, index)
-                    if (match) {
-                        stack.push(child)
-                        return true
-                    }
-                    continue
-                }
-                if (path === '*') {
-                    const match = findMatchChild(child, index + 1)
-                    if (match) {
-                        stack.push(child)
-                        return true
-                    }
-                    continue
-                }
-                if (path === '**') {
-                    if (!isUnset(child.page)) {
-                        stack.push(child)
-                        return true
-                    }
-                }
+                recurse(
+                    child,
+                    p === '#' ? paths : [...paths, path],
+                    isDynamic
+                )
             }
-            return false
+        }
+        recurse(entry)
+
+        return exactMap
+    }, [entry])
+
+    console.log(exactRoutesMap)
+    console.log(dynamicRoutesMap.current)
+
+    const routeStack = useMemo(() => {
+        const combineStack = (route: RouteItem) => {
+            const stack = []
+            stack.push(route)
+            while (route._parent) {
+                route = route._parent
+                stack.push(route)
+            }
+            return stack.reverse()
         }
 
-        const match = findMatchChild(entry)
-        if (!match) {
-            return
+        const exact = exactRoutesMap.get(pathname)
+        if (exact) {
+            return combineStack(exact)
         }
-        stack.push(entry)
 
-        return stack.reverse()
-    }, [pathname])
+        for (const [path, route] of dynamicRoutesMap.current) {
+            const matched = matchPath(pathname, path)
+            if (matched) {
+                for (const k in matched) {
+                    params[k] = matched[k]
+                }
+                return combineStack(route)
+            }
+        }
+    }, [pathname, entry])
 
     if (!routeStack) {
         return notFound

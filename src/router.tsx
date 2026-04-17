@@ -1,5 +1,5 @@
 import {createContext, memo, useContext, useEffect, useMemo, useRef, useState} from 'react'
-import {NavigateOptions, RouterContext as IRouterContext, RouterProps, To} from '..'
+import {NavigateOptions, Params, RouterContext as IRouterContext, RouterProps, To} from '..'
 import {cloneLocation, dropStartSlash, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
 import {Routes} from './routes'
 
@@ -80,7 +80,7 @@ export const Router = memo(({
         setInnerState(state)
     }
 
-    const params = useRef<Record<string, string>>({})
+    const params = useRef<Params>({})
 
     // 截断base后的pathname
     const pathname = useMemo(() => {

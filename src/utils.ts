@@ -1,4 +1,4 @@
-import {ILocation, To} from '..'
+import {ILocation, Params, To} from '..'
 import {Dispatch, RefObject, SetStateAction, useCallback, useRef, useState} from 'react'
 
 /**
@@ -201,22 +201,61 @@ export function resolvePath(to: To, fromPath?: string | null) {
 
 /**
  * 从前端截断路径
- * @param currentPath
+ * @param pathname
  * @param scissor
  * @returns {string} 返回截断后的子路径
  * @returns {null} 如果路径不匹配，返回null
  */
-export function truncatePath(currentPath: string, scissor: string | RegExp | undefined): string | null {
+export function truncatePath(pathname: string, scissor: string | RegExp | undefined): string | null {
     if (scissor instanceof RegExp) {
         scissor = scissor.source.replace(/^\^?/, '').replace(/\$?$/, '')
     }
-    currentPath = unifyPath(currentPath)
+    pathname = unifyPath(pathname)
     scissor = unifyPath(scissor || '')
     if (!scissor) {
-        return currentPath
+        return pathname
     }
-    if (!RegExp(`^${scissor}(/[^/]+)*$`).test(currentPath)) {
+    if (!RegExp(`^${scissor}(/[^/]+)*$`).test(pathname)) {
         return null
     }
-    return currentPath.replace(RegExp(`^${scissor}`), '')
+    return pathname.replace(RegExp(`^${scissor}`), '')
+}
+
+/**
+ * 匹配路径并获得路径中的参数
+ * @param pathname
+ * @param routePath
+ * @returns {Record<string, string>} 返回匹配的参数
+ * @returns {null} 如果路径不匹配，返回null
+ */
+const doubleAsteriskReplacement = '_DOUBLE_ASTERISK_REPLACEMENT_'
+
+export function matchPath(pathname: string, routePath: string) {
+    const paramNames: string[] = []
+    let pattern = routePath
+        .replace(/\*\*+/, () => {
+            return doubleAsteriskReplacement
+        })
+        .replace(/(:[^/]+)|\*/g, $1 => {
+            paramNames.push($1 === '*' ? $1 : $1.slice(1))
+            return '([^/]+)'
+        })
+        .replace(new RegExp(doubleAsteriskReplacement), '.*')
+
+    const match = pathname.match(new RegExp(pattern))
+    if (!match) {
+        return null
+    }
+
+    const params: Params = {}
+    paramNames.forEach((name, i) => {
+        const value = match[i + 1]
+        if (typeof params[name] === 'string') {
+            params[name] = [params[name]]
+            params[name].push(value)
+        } else {
+            params[name] = value
+        }
+    })
+    return params
 }

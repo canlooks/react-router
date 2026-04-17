@@ -29,6 +29,8 @@ declare namespace Router {
         search: string
     }
 
+    type Params = Record<string, string | string[]>
+
     type RouterContext = {
         mode: Mode
         base: string
@@ -47,7 +49,7 @@ declare namespace Router {
         state: any
         setState: Dispatch<SetStateAction<any>>
 
-        params: Record<string, string>
+        params: Params
 
         /** @private */
         updateClonedLocation?(): void
@@ -69,6 +71,8 @@ declare namespace Router {
         layout?: ReactNode
         page?: ReactNode
         children?: Record<string, RouteItem>
+        /** @private */
+        _parent?: RouteItem
     }
 
     function Router(props: RouterProps): ReactElement
@@ -218,6 +222,15 @@ declare namespace Router {
      * @returns {null} 如果路径不匹配，返回null
      */
     function truncatePath(referencePath: string, routePath: string | RegExp | undefined): string | null
+
+    /**
+     * 匹配路径并获得路径中的参数
+     * @param pathname
+     * @param routePath
+     * @returns {Params} 返回匹配的参数
+     * @returns {null} 如果路径不匹配，返回null
+     */
+    function matchPath(pathname: string, routePath: string): Params | null
 }
 
 export = Router
