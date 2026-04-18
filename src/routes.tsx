@@ -17,7 +17,6 @@ export const Routes = memo(({entry, notFound}: {
         const exactMap = new Map<string, RouteItem>()
 
         const recurse = (route: RouteItem, paths: string[] = [], isDynamic?: boolean) => {
-            console.log(route, paths)
             if (!isUnset(route.page)) {
                 const map = isDynamic ? dynamicRoutesMap.current : exactMap
                 const path = '/' + paths.join('/')
@@ -47,9 +46,6 @@ export const Routes = memo(({entry, notFound}: {
 
         return exactMap
     }, [entry])
-
-    console.log(exactRoutesMap)
-    console.log(dynamicRoutesMap.current)
 
     const routeStack = useMemo(() => {
         const combineStack = (route: RouteItem) => {

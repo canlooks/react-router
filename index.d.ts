@@ -67,12 +67,12 @@ declare namespace Router {
         notFound?: ReactNode
     }
 
-    type RouteItem = {
+    type RouteItem<T extends Record<any, any> = {}> = T & {
         layout?: ReactNode
         page?: ReactNode
-        children?: Record<string, RouteItem>
+        children?: Record<string, RouteItem<T>>
         /** @private */
-        _parent?: RouteItem
+        _parent?: RouteItem<T>
     }
 
     function Router(props: RouterProps): ReactElement
@@ -80,6 +80,7 @@ declare namespace Router {
     function useRouter(): RouterContext
 
     function useSearchParams(): URLSearchParams
+
     /** @alias {@link useSearchParams} */
     function useQuery(): URLSearchParams
 
@@ -90,11 +91,13 @@ declare namespace Router {
      * outlet
      */
 
-    function useRouteStack(): RouteItem[]
+    function useRouteStack<T extends RouteItem = RouteItem>(): T[]
 
-    function useRouteLayoutStack(): RouteItem[]
+    function useRouteLayoutStack<T extends RouteItem = RouteItem>(): T[]
 
     function useRouteLayoutStackIndex(): number
+
+    function useCurrentRoute<T extends RouteItem = RouteItem>(): T
 
     function useOutlet(): ReactElement | null
 

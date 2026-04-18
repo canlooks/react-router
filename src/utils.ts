@@ -233,7 +233,7 @@ const doubleAsteriskReplacement = '_DOUBLE_ASTERISK_REPLACEMENT_'
 export function matchPath(pathname: string, routePath: string) {
     const paramNames: string[] = []
     let pattern = routePath
-        .replace(/\*\*+/, () => {
+        .replace(/\/\*\*+/, () => {
             return doubleAsteriskReplacement
         })
         .replace(/(:[^/]+)|\*/g, $1 => {

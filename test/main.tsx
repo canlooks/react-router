@@ -1,6 +1,6 @@
 import {createRoot} from 'react-dom/client'
-import {Outlet, Router, Routes, useParams} from '../src'
-import {RouteItem, } from '../index'
+import {Outlet, Router, Routes, useCurrentRoute, useParams} from '../src'
+import {RouteItem} from '../index'
 
 createRoot(document.getElementById('app')!).render(<App/>)
 
@@ -66,6 +66,8 @@ function Group2Layout() {
 }
 
 function Authentication() {
+    const currentRoute = useCurrentRoute()
+    console.log('Authentication', currentRoute)
     return (
         <>
             <h1>Authentication</h1>
@@ -75,6 +77,9 @@ function Authentication() {
 }
 
 function Layout() {
+    const currentRoute = useCurrentRoute()
+    console.log('Layout', currentRoute)
+
     return (
         <>
             <h1>Layout</h1>
@@ -84,6 +89,9 @@ function Layout() {
 }
 
 function Index() {
+    const currentRoute = useCurrentRoute()
+    console.log('Index', currentRoute)
+
     return (
         <>
             <h1>Index</h1>
@@ -91,12 +99,13 @@ function Index() {
     )
 }
 
-const routes: RouteItem = {
+const routes: RouteItem<{ id?: string }> = {
     children: {
         'login': {
             page: 'login'
         },
         '#authentication': {
+            id: '',
             layout: <Authentication/>,
             children: {
                 '#indexLayout': {

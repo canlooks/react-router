@@ -21,6 +21,14 @@ export function useRouteLayoutStackIndex() {
     return useContext(RouteLayoutStackIndex)
 }
 
+export function useCurrentRoute() {
+    const index = useRouteLayoutStackIndex()
+    const layoutStack = useRouteLayoutStack()
+    const last = Math.min(layoutStack.length, index)
+
+    return layoutStack[last - 1]
+}
+
 export function useOutlet() {
     const index = useRouteLayoutStackIndex()
     const layoutStack = useRouteLayoutStack()
