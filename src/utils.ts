@@ -240,10 +240,10 @@ export function matchPath(pathname: string, routePath: string) {
             paramNames.push($1 === '*' ? $1 : $1.slice(1))
             return '([^/]+)'
         })
-        .replace(new RegExp(doubleAsteriskReplacement, 'g'), '.*')
-        .replace(/\/\.\*$/, '/?.*')
+        // 需要将**前方的/一同匹配，以防/path**的写法
+        .replace(new RegExp('/' + doubleAsteriskReplacement, 'g'), '/?.*')
 
-    const match = pathname.match(new RegExp(pattern))
+    const match = pathname.match(new RegExp(`^${pattern}$`))
     if (!match) {
         return null
     }
