@@ -4,6 +4,8 @@ import {useRouter} from './router'
 import {isUnset, matchPath} from './utils'
 import {Outlet, RouteLayoutStackIndex, RouteStack} from './outlet'
 
+const parentMap = new WeakMap<RouteItem, RouteItem>()
+
 export const Routes = memo(({entry, notFound}: {
     entry: RouteItem
     notFound?: ReactNode
@@ -32,7 +34,7 @@ export const Routes = memo(({entry, notFound}: {
             for (const path in children) {
                 const child = children[path]
                 const [p] = path
-                child._parent = route
+                parentMap.set(child, route)
                 isDynamic ||= p === ':' || path === '*' || path === '**'
 
                 recurse(
@@ -48,11 +50,15 @@ export const Routes = memo(({entry, notFound}: {
     }, [entry])
 
     const routeStack = useMemo(() => {
+        if (pathname === null) {
+            return
+        }
+
         const combineStack = (route: RouteItem) => {
             const stack = []
             stack.push(route)
-            while (route._parent) {
-                route = route._parent
+            while (parentMap.has(route)) {
+                route = parentMap.get(route)!
                 stack.push(route)
             }
             return stack.reverse()
@@ -72,7 +78,7 @@ export const Routes = memo(({entry, notFound}: {
                 return combineStack(route)
             }
         }
-    }, [pathname, entry])
+    }, [pathname, exactRoutesMap, params])
 
     if (!routeStack) {
         return notFound

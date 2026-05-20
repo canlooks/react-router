@@ -43,11 +43,14 @@ export function useOutlet() {
 
     if (index === layoutStack.length - 1) {
         const {layout, page} = layoutStack[index]
-        return (
-            <RouteLayoutStackIndex value={index + 1}>
-                {layout || page}
+        return !isUnset(layout)
+            ? <RouteLayoutStackIndex value={index + 1}>
+                {layout}
             </RouteLayoutStackIndex>
-        )
+            // Skip the "page" level when layout was already falsy at the "last layout" level
+            : <RouteLayoutStackIndex value={index + 2}>
+                {page}
+            </RouteLayoutStackIndex>
     }
 
     if (index === layoutStack.length) {

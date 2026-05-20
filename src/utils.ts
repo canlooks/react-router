@@ -218,7 +218,7 @@ export function truncatePath(pathname: string, scissor: string | RegExp | undefi
     if (!RegExp(`^${scissor}(/[^/]+)*$`).test(pathname)) {
         return null
     }
-    return pathname.replace(RegExp(`^${scissor}`), '')
+    return pathname.replace(RegExp(`^${scissor}/?`), '')
 }
 
 /**

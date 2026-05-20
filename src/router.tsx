@@ -86,7 +86,8 @@ export const Router = memo(({
     const pathname = useMemo(() => {
         // pathname改变需要清空params重新装填
         params.current = {}
-        return '/' + truncatePath(locationInMode.pathname, base)
+        const truncated = truncatePath(locationInMode.pathname, base)
+        return truncated === null ? null : joinPath('/', truncated)
     }, [locationInMode.pathname, base])
 
     /**

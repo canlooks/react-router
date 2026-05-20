@@ -36,7 +36,7 @@ declare namespace Router {
         base: string
         location: ILocation
         /** The path used to match routes(truncated by {@link base}) */
-        pathname: string
+        pathname: string | null
 
         replace(to: To, options?: Omit<NavigateOptions, 'replace'>): void
 
@@ -71,8 +71,6 @@ declare namespace Router {
         layout?: ReactNode
         page?: ReactNode
         children?: Record<string, RouteItem<T>>
-        /** @private */
-        _parent?: RouteItem<T>
     }
 
     function Router(props: RouterProps): ReactElement
