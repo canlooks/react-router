@@ -139,6 +139,14 @@ export function dropLastPortion(path: string) {
  * @param paths
  */
 export function joinPath(...paths: string[]) {
+    if (paths.length === 0) {
+        return ''
+    }
+    if (paths.length === 1) {
+        let [path] = paths
+        path = unifySlash(path)
+        return dropEndSlash(path)
+    }
     const fn = (prev: string, next: string) => {
         if (/^[a-zA-Z]+:/.test(next)) {
             return next
