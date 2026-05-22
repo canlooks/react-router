@@ -1,6 +1,6 @@
 import {createContext, memo, useContext, useEffect, useMemo, useRef, useState} from 'react'
 import {NavigateOptions, Params, RouterContext as IRouterContext, RouterProps, To} from '..'
-import {cloneLocation, dropStartSlash, isLocationChanged, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
+import {cloneLocation, dropStartSlash, isLocationChanged, isStartWithProtocol, joinPath, resolvePath, truncatePath, unifyPath, unifySlash, useSyncState} from './utils'
 import {Routes} from './routes'
 
 export const RouterContext = createContext({} as IRouterContext)
@@ -15,7 +15,10 @@ export const Router = memo(({
     entry,
     notFound
 }: RouterProps) => {
-    base = '/' + unifyPath(base)
+    base = unifyPath(base)
+    if (!isStartWithProtocol(base)) {
+        base = '/' + base
+    }
 
     const parentRouter = useRouter()
 

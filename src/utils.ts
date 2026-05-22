@@ -135,6 +135,14 @@ export function dropLastPortion(path: string) {
 }
 
 /**
+ * 判断路径开头是否带有协议
+ * @param path
+ */
+export function isStartWithProtocol(path: string) {
+    return /^[a-zA-Z]+:\/\//.test(path)
+}
+
+/**
  * 拼接路径
  * @param paths
  */
@@ -148,7 +156,7 @@ export function joinPath(...paths: string[]) {
         return dropEndSlash(path)
     }
     const fn = (prev: string, next: string) => {
-        if (/^[a-zA-Z]+:/.test(next)) {
+        if (isStartWithProtocol(next)) {
             return next
         }
         prev = unifySlash(prev)
@@ -190,7 +198,7 @@ export function resolvePath(to: To, fromPath?: string | null) {
     if (to instanceof URL) {
         return to.href
     }
-    if (/^[a-zA-Z]+:/.test(to)) {
+    if (isStartWithProtocol(to)) {
         return to
     }
     to = unifySlash(to)
