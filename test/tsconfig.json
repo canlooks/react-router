@@ -1,10 +1,23 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "noUnusedLocals": false
+    "rootDir": "..",
+    "module": "ESNext",
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "types": [
+      "node",
+      "vitest/globals"
+    ]
   },
   "include": [
-    "**/*"
+    "../index.d.ts",
+    "../src/**/*",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "coverage"
   ]
 }

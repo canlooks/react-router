@@ -1,6 +1,11 @@
 # compiled output
 node_modules
 /dist
+/test/coverage
+/test/browser/results
+
+# test reports
+/test/test-reports
 
 # local env files
 .env.local

@@ -33,6 +33,10 @@ export function useOutlet() {
     const index = useRouteLayoutStackIndex()
     const layoutStack = useRouteLayoutStack()
 
+    if (layoutStack.length === 0) {
+        return null
+    }
+
     if (index < layoutStack.length - 1) {
         return (
             <RouteLayoutStackIndex value={index + 1}>
@@ -60,6 +64,7 @@ export function useOutlet() {
             </RouteLayoutStackIndex>
         )
     }
+    return null
 }
 
 export function Outlet() {

@@ -198,4 +198,17 @@ describe('useNavigate', () => {
         const ctx = getContext()
         expect(() => ctx?.navigate(new URL('/same-origin', window.location.origin))).not.toThrow()
     })
+
+    it('same-origin URL outside the configured base throws a base error', () => {
+        history.replaceState(null, '', '/app')
+        let router: ReturnType<typeof useRouter> | null = null
+        function Reporter() {
+            router = useRouter()
+            return <div>page</div>
+        }
+        render(<Router base="/app" entry={{page: <Reporter/>}}/>)
+
+        expect(() => router!.navigate(new URL('/outside', location.origin)))
+            .toThrow('Cannot navigate outside Router base')
+    })
 })

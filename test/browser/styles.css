@@ -1,0 +1,49 @@
+html {
+    font-family: system-ui, sans-serif;
+}
+
+body {
+    margin: 0;
+}
+
+main {
+    padding: 16px;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 3px solid #b42318;
+    outline-offset: 2px;
+}
+
+output {
+    display: block;
+    margin-top: 8px;
+}
+
+.long-page {
+    min-height: 3000px;
+}
+
+.scroll-link {
+    position: fixed;
+    bottom: 16px;
+    z-index: 1;
+    padding: 8px;
+    color: white;
+    background: #174ea6;
+}
+
+.scroll-reset {
+    right: 16px;
+}
+
+.scroll-preserve {
+    right: 128px;
+}

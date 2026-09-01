@@ -24,12 +24,9 @@ function createContextReporter() {
 describe('Router', () => {
     beforeEach(() => {
         window.history.replaceState(null, '', '/')
+        vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
     })
 
-    afterEach(() => {
-        cleanup()
-        vi.restoreAllMocks()
-    })
     afterEach(() => {
         cleanup()
         vi.restoreAllMocks()
@@ -262,5 +259,80 @@ describe('Router', () => {
         })
 
         expect(capturedState).toEqual({user: 'test'})
+    })
+
+    it('replace() should delegate to replaceState and preserve navigation options', () => {
+        const {Reporter, getContext} = createContextReporter()
+        const replaceState = vi.spyOn(history, 'replaceState').mockImplementation(() => undefined)
+        const entry: RouteItem = {
+            children: {'**': {page: h(Reporter)}}
+        }
+        render(h(Router, {entry}))
+
+        act(() => {
+            getContext()!.replace('/next', {
+                state: {from: 'root'},
+                scrollRestore: false,
+            })
+        })
+
+        expect(replaceState).toHaveBeenCalledWith({from: 'root'}, '', '/next')
+        expect(window.scrollTo).toHaveBeenCalledWith({left: 0, top: 0, behavior: 'auto'})
+        expect(getContext()?.state).toEqual({from: 'root'})
+    })
+
+    it('should expose pathname=null and render notFound outside the configured base', () => {
+        const {Reporter, getContext} = createContextReporter()
+        const entry: RouteItem = {page: h('div', null, 'Inside base')}
+
+        render(h(Router, {
+            base: '/app',
+            entry,
+            notFound: h(Reporter),
+        }))
+
+        expect(getContext()?.pathname).toBeNull()
+        expect(screen.getByTestId('page')).toHaveTextContent('Page Content')
+    })
+
+    it('treats regex metacharacters in base as literal text', () => {
+        history.replaceState(null, '', '/appXv1/home')
+        const {Reporter, getContext} = createContextReporter()
+
+        render(<Router
+            base="/app.v1"
+            entry={{children: {'**': {page: <div>inside</div>}}}}
+            notFound={<Reporter/>}
+        />)
+
+        expect(getContext()?.pathname).toBeNull()
+    })
+
+    it('supports a percent-encoded Unicode base', () => {
+        history.replaceState(null, '', '/%E5%BA%94%E7%94%A8/home')
+        const {Reporter, getContext} = createContextReporter()
+
+        render(<Router base="/应用" entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getContext()?.base).toBe('/%E5%BA%94%E7%94%A8')
+        expect(getContext()?.pathname).toBe('/home')
+    })
+
+    it('matches lowercase percent escapes in a history URL against a literal Unicode base', () => {
+        history.replaceState(null, '', '/%e5%ba%94%e7%94%a8/home')
+        const {Reporter, getContext} = createContextReporter()
+
+        render(<Router base="/应用" entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getContext()?.pathname).toBe('/home')
+    })
+
+    it('matches lowercase percent escapes in a hash URL against a literal Unicode base', () => {
+        history.replaceState(null, '', '/#/%e5%ba%94%e7%94%a8/home')
+        const {Reporter, getContext} = createContextReporter()
+
+        render(<Router mode="hash" base="/应用" entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getContext()?.pathname).toBe('/home')
     })
 })

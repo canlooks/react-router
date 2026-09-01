@@ -4,7 +4,7 @@ import { Router, useRouter } from '../../src'
 
 describe('useRouter', () => {
     beforeEach(() => {
-        window.history.pushState({}, '', '/')
+        window.history.replaceState(null, '', '/')
     })
 
     function createContextReporter() {

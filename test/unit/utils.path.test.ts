@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { unifySlash, dropStartSlash, dropEndSlash, unifyPath, dropLastPortion } from '../../src/utils'
+import { unifySlash, dropStartSlash, dropEndSlash, unifyPath } from '../../src/utils'
 
 describe('unifySlash', () => {
     it('should convert backslashes to forward slashes', () => {
@@ -74,23 +74,5 @@ describe('unifyPath', () => {
 
     it('should return empty string when all characters are slashes', () => {
         expect(unifyPath('///')).toBe('')
-    })
-})
-
-describe('dropLastPortion', () => {
-    it('should remove the last path segment', () => {
-        expect(dropLastPortion('a/b/c')).toBe('a/b')
-    })
-
-    it('should return original string when only one segment without slash', () => {
-        expect(dropLastPortion('a')).toBe('a')
-    })
-
-    it('should handle trailing slash', () => {
-        expect(dropLastPortion('a/b/')).toBe('a')
-    })
-
-    it('should return empty string for empty input', () => {
-        expect(dropLastPortion('')).toBe('')
     })
 })

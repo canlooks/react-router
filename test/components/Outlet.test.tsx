@@ -107,4 +107,16 @@ describe('Outlet', () => {
         expect(screen.queryByTestId('layout-0')).not.toBeInTheDocument()
         expect(screen.queryByTestId('layout-1')).not.toBeInTheDocument()
     })
+
+    it('should render nothing when the outlet index is beyond the layout stack', () => {
+        const {container} = renderOutlet([pageOnly], 2)
+
+        expect(container).toBeEmptyDOMElement()
+    })
+
+    it('should render nothing for an empty route stack', () => {
+        const {container} = renderOutlet([], 0)
+
+        expect(container).toBeEmptyDOMElement()
+    })
 })

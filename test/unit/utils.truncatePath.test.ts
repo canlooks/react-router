@@ -45,4 +45,21 @@ describe('truncatePath', () => {
     it('should strip only the exact prefix, not prefix-like segments', () => {
         expect(truncatePath('/app/app-users', '/app')).toBe('app-users')
     })
+
+    it('should treat a string base containing regex characters literally', () => {
+        expect(truncatePath('/app.v1/home', '/app.v1')).toBe('home')
+        expect(truncatePath('/appXv1/home', '/app.v1')).toBeNull()
+    })
+
+    it('should not throw for literal square brackets in a string base', () => {
+        expect(truncatePath('/app[1]/home', '/app[1]')).toBe('home')
+    })
+
+    it('returns null when a regex does not match the prefix', () => {
+        expect(truncatePath('/other/home', /app/)).toBeNull()
+    })
+
+    it('returns null when a regex match ends inside a path segment', () => {
+        expect(truncatePath('/application/home', /app/)).toBeNull()
+    })
 })

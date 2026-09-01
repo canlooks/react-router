@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { matchPath } from '../../src/utils'
+import { matchPath, segmentRank } from '../../src/utils'
+
+describe('segmentRank', () => {
+    it('classifies catch-all, wildcard, parameter, and static segments', () => {
+        expect(segmentRank('**')).toBe(1)
+        expect(segmentRank('*')).toBe(2)
+        expect(segmentRank(':id')).toBe(3)
+        expect(segmentRank(':')).toBe(4)
+        expect(segmentRank('users')).toBe(4)
+    })
+})
 
 describe('matchPath', () => {
     it('should match exact paths and return empty params', () => {
@@ -71,5 +81,39 @@ describe('matchPath', () => {
         expect(matchPath('/user/42', '/:a/:a')).toEqual({
             a: ['user', '42'],
         })
+    })
+
+    it.each([
+        '.', '+', '?', '(', ')', '[', ']', '{', '}', '^', '$', '|', '\\',
+    ])('should treat static metacharacter "%s" literally', character => {
+        const literalSegment = `v1${character}0`
+        const literalRoute = `/release/${encodeURIComponent(literalSegment)}`
+        expect(matchPath(literalRoute, literalRoute)).toEqual({})
+        expect(matchPath('/release/v1x0', literalRoute)).toBeNull()
+    })
+
+    it('should decode named and wildcard params exactly once', () => {
+        expect(matchPath('/%E4%B8%AD/%252F', '/:name/*')).toEqual({
+            name: '中',
+            '*': '%2F',
+        })
+    })
+
+    it('should preserve malformed percent encoding', () => {
+        expect(matchPath('/bad%2', '/:value')).toEqual({value: 'bad%2'})
+    })
+
+    it('should decode an encoded slash only after segment matching', () => {
+        expect(matchPath('/files/a%2Fb', '/files/:name')).toEqual({name: 'a/b'})
+    })
+
+    it('should append a third duplicate named param to the existing array', () => {
+        expect(matchPath('/a/b/c', '/:value/:value/:value')).toEqual({
+            value: ['a', 'b', 'c'],
+        })
+    })
+
+    it('should backtrack and fail a non-terminal catch-all when its suffix never matches', () => {
+        expect(matchPath('/a/b/c', '/**/missing')).toBeNull()
     })
 })

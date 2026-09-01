@@ -1,5 +1,59 @@
-import {ILocation, Params, To} from '..'
+import {Params, To} from '..'
 import {Dispatch, RefObject, SetStateAction, useCallback, useRef, useState} from 'react'
+
+export type RouteLocation = {
+    pathname: string
+    search: string
+    hash: string
+}
+
+export const INTERNAL_ORIGIN = 'http://react-router.invalid'
+const absoluteUrlPattern = /^[a-zA-Z][a-zA-Z\d+.-]*:/
+
+export function getDocumentOrigin() {
+    return typeof location === 'undefined' || !location.origin
+        ? INTERNAL_ORIGIN
+        : location.origin
+}
+
+export function normalizeUrlPathname(pathname: string) {
+    pathname = unifySlash(pathname)
+
+    if (!pathname) {
+        return '/'
+    }
+    return pathname.startsWith('/') ? pathname : '/' + pathname
+}
+
+export function formatRouteLocation(routeLocation: RouteLocation) {
+    return `${normalizeUrlPathname(routeLocation.pathname)}${routeLocation.search}${routeLocation.hash}`
+}
+
+export function routeLocationFromUrl(url: URL): RouteLocation {
+    return {
+        pathname: normalizeUrlPathname(url.pathname),
+        search: url.search,
+        hash: url.hash
+    }
+}
+
+export function resolveInternalLocation(to: string, from: RouteLocation): RouteLocation {
+    const fromUrl = new URL(formatRouteLocation(from), INTERNAL_ORIGIN)
+    const resolved = new URL(to, fromUrl)
+    return routeLocationFromUrl(resolved)
+}
+
+export function isAbsoluteUrlInput(to: string) {
+    return absoluteUrlPattern.test(to) || to.startsWith('//')
+}
+
+export function safeDecodeSegment(value: string) {
+    try {
+        return decodeURIComponent(value)
+    } catch {
+        return value
+    }
+}
 
 /**
  * 将某个值使用ref同步，主要用于对付组件的闭包问题
@@ -30,48 +84,11 @@ export function useSyncState(initialState?: any): [RefObject<any>, Dispatch<SetS
 }
 
 /**
- * 复制location对象，用于存储在react的state中以更新组件
- */
-export function cloneLocation(): ILocation {
-    const copied: any = {}
-    for (const k in location) {
-        const v = location[k as keyof Location]
-        if (strOrNum(v)) {
-            // 只保存字符串与数字类型的属性
-            copied[k] = v
-        }
-    }
-    return copied
-}
-
-/**
- * 判断值是否为字符串或数字
- * @param value
- */
-export function strOrNum(value: any): value is string | number {
-    const valueType = typeof value
-    return valueType === 'string' || valueType === 'number'
-}
-
-/**
  * 判断某个类型为`ReactNode`的变量是否"无法渲染"
  * @param it
  */
 export function isUnset(it: any): it is undefined | null | false {
     return typeof it === 'undefined' || it === null || it === false
-}
-
-/**
- * 浅比较，判断location是否发生改变
- */
-export function isLocationChanged(clonedLocation: ILocation) {
-    for (const k in clonedLocation) {
-        const v = clonedLocation[k as keyof ILocation]
-        if (strOrNum(v) && v !== location[k as keyof ILocation]) {
-            return true
-        }
-    }
-    return false
 }
 
 /**
@@ -115,31 +132,25 @@ export function unifyPath(path: string) {
  * @param path
  */
 function dropSearchAndHash(path: string) {
-    const drop = (path: string, symbol: '$' | '#') => {
+    const drop = (path: string, symbol: '?' | '#') => {
         const index = path.indexOf(symbol)
         if (index > -1) {
             return path.slice(0, index)
         }
         return path
     }
-    path = drop(path, '$')
+    path = drop(path, '?')
     return drop(path, '#')
 }
 
-/**
- * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}和{@link dropSearchAndHash}
- * @param path
- */
-export function dropLastPortion(path: string) {
-    return path.replace(/\/[^/]+\/*$/, '')
-}
-
-/**
- * 判断路径开头是否带有协议
- * @param path
- */
-export function isStartWithProtocol(path: string) {
-    return /^[a-zA-Z]+:\/\//.test(path)
+function assertHierarchicalUrlBase(url: URL) {
+    try {
+        new URL('.', url)
+    } catch {
+        throw new TypeError(
+            `Cannot join a relative reference to URL protocol "${url.protocol}".`
+        )
+    }
 }
 
 /**
@@ -152,39 +163,80 @@ export function joinPath(...paths: string[]) {
     }
     if (paths.length === 1) {
         let [path] = paths
+        if (isAbsoluteUrlInput(path)) {
+            return new URL(path, getDocumentOrigin()).href
+        }
         path = unifySlash(path)
         return dropEndSlash(path)
     }
     const fn = (prev: string, next: string) => {
-        if (isStartWithProtocol(next)) {
-            return next
+        if (isAbsoluteUrlInput(next)) {
+            return new URL(next, getDocumentOrigin()).href
         }
-        prev = unifySlash(prev)
-        prev = dropSearchAndHash(prev)
+
+        const previousIsUrl = isAbsoluteUrlInput(prev)
+        const previousUrl = previousIsUrl ? new URL(prev) : null
+        const previousPath = previousUrl
+            ? previousUrl.pathname
+            : dropSearchAndHash(unifySlash(prev))
+
         next = unifySlash(next)
-        if (!prev) {
+        if (!previousPath) {
             return next
         }
         if (!next) {
-            return prev
+            if (previousUrl) {
+                previousUrl.pathname = dropEndSlash(previousUrl.pathname) || '/'
+                previousUrl.search = ''
+                previousUrl.hash = ''
+                return previousUrl.href
+            }
+            return dropEndSlash(previousPath)
         }
-        const [l] = next
-        // 特殊开头，开启新路径
-        if (l === '/') {
-            return next
+
+        if (previousUrl) {
+            assertHierarchicalUrlBase(previousUrl)
         }
-        // ".."或"../"开头，去掉prev的前一段后递归
-        if (next.startsWith('..')) {
-            return fn(
-                dropLastPortion(prev),
-                next.replace(/^\.\.\/?/, '')
+
+        if (next.startsWith('?') || next.startsWith('#')) {
+            const base = previousUrl || new URL(
+                (previousPath.startsWith('/') ? previousPath : '/' + previousPath),
+                INTERNAL_ORIGIN
             )
+            const resolved = new URL(next, base)
+            if (previousUrl) {
+                return resolved.href
+            }
+            const path = formatRouteLocation(resolved)
+            return previousPath.startsWith('/') ? path : dropStartSlash(path)
         }
-        // "."或"./"开头，直接递归
-        if (l === '.') {
-            return fn(prev, next.replace(/^\.\/?/, ''))
+
+        if (next.startsWith('/')) {
+            if (!previousUrl) {
+                return dropEndSlash(next)
+            }
+            previousUrl.pathname = next
+            previousUrl.search = ''
+            previousUrl.hash = ''
+            return previousUrl.href
         }
-        return `${dropEndSlash(prev)}/${dropEndSlash(next)}`
+
+        const pathHasLeadingSlash = previousPath.startsWith('/')
+        const directory = dropEndSlash(previousPath) + '/'
+        const base = previousUrl
+            ? new URL(directory, previousUrl)
+            : new URL(
+                pathHasLeadingSlash ? directory : '/' + directory,
+                INTERNAL_ORIGIN
+            )
+        const resolved = new URL(next, base)
+        resolved.pathname = dropEndSlash(resolved.pathname) || '/'
+
+        if (previousUrl) {
+            return resolved.href
+        }
+        const output = formatRouteLocation(resolved)
+        return pathHasLeadingSlash ? output : dropStartSlash(output)
     }
     return paths.reduce(fn)
 }
@@ -198,21 +250,18 @@ export function resolvePath(to: To, fromPath?: string | null) {
     if (to instanceof URL) {
         return to.href
     }
-    if (isStartWithProtocol(to)) {
-        return to
+    if (isAbsoluteUrlInput(to)) {
+        return new URL(to, getDocumentOrigin()).href
     }
-    to = unifySlash(to)
-    if (fromPath) {
-        fromPath = dropSearchAndHash(fromPath)
+    if (!fromPath) {
+        return unifySlash(to)
     }
-    const [l] = to
-    if (!fromPath || l === '/') {
-        return to
-    }
-    if (l !== '?' && l !== '#') {
-        fromPath = dropLastPortion(fromPath)
-    }
-    return joinPath(fromPath, to)
+
+    const from = routeLocationFromUrl(new URL(
+        fromPath.startsWith('/') ? fromPath : '/' + fromPath,
+        INTERNAL_ORIGIN
+    ))
+    return formatRouteLocation(resolveInternalLocation(to, from))
 }
 
 /**
@@ -224,17 +273,43 @@ export function resolvePath(to: To, fromPath?: string | null) {
  */
 export function truncatePath(pathname: string, scissor: string | RegExp | undefined): string | null {
     if (scissor instanceof RegExp) {
-        scissor = scissor.source.replace(/^\^?/, '').replace(/\$?$/, '')
+        const normalizedPathname = '/' + unifyPath(pathname)
+        const flags = scissor.flags.replace(/[gy]/g, '')
+        const match = normalizedPathname.match(new RegExp(scissor.source, flags))
+        if (!match || typeof match.index !== 'number' || match.index > 1) {
+            return null
+        }
+        const rest = normalizedPathname.slice(match.index + match[0].length)
+        if (rest && !rest.startsWith('/')) {
+            return null
+        }
+        return unifyPath(rest)
     }
     pathname = unifyPath(pathname)
     scissor = unifyPath(scissor || '')
     if (!scissor) {
         return pathname
     }
-    if (!RegExp(`^${scissor}(/[^/]+)*$`).test(pathname)) {
-        return null
+    if (pathname === scissor) {
+        return ''
     }
-    return pathname.replace(RegExp(`^${scissor}/?`), '')
+    return pathname.startsWith(scissor + '/')
+        ? pathname.slice(scissor.length + 1)
+        : null
+}
+
+/** 判断路由段的匹配优先级。 */
+export function segmentRank(segment: string) {
+    if (segment === '**') {
+        return 1
+    }
+    if (segment === '*') {
+        return 2
+    }
+    if (segment.startsWith(':') && segment.length > 1) {
+        return 3
+    }
+    return 4
 }
 
 /**
@@ -244,35 +319,58 @@ export function truncatePath(pathname: string, scissor: string | RegExp | undefi
  * @returns {Record<string, string>} 返回匹配的参数
  * @returns {null} 如果路径不匹配，返回null
  */
-const doubleAsteriskReplacement = '_DOUBLE_ASTERISK_REPLACEMENT_'
-
 export function matchPath(pathname: string, routePath: string) {
-    const paramNames: string[] = []
-    let pattern = routePath
-        .replace(/\*\*+/, () => {
-            return doubleAsteriskReplacement
-        })
-        .replace(/(:[^/]+)|\*/g, $1 => {
-            paramNames.push($1 === '*' ? $1 : $1.slice(1))
-            return '([^/]+)'
-        })
-        // 需要将**前方的/一同匹配，以防/path**的写法
-        .replace(new RegExp('/' + doubleAsteriskReplacement, 'g'), '/?.*')
+    const pathnameSegments = unifyPath(dropSearchAndHash(pathname))
+        .split('/')
+        .filter(Boolean)
+    const routeSegments = unifyPath(routePath)
+        .split('/')
+        .filter(Boolean)
 
-    const match = pathname.match(new RegExp(`^${pattern}$`))
-    if (!match) {
-        return null
-    }
-
-    const params: Params = {}
-    paramNames.forEach((name, i) => {
-        const value = match[i + 1]
-        if (typeof params[name] === 'string') {
-            params[name] = [params[name]]
-            params[name].push(value)
+    const appendParam = (params: Params, name: string, value: string) => {
+        const existing = params[name]
+        if (typeof existing === 'string') {
+            params[name] = [existing, value]
+        } else if (Array.isArray(existing)) {
+            params[name] = [...existing, value]
         } else {
             params[name] = value
         }
-    })
-    return params
+    }
+
+    const recurse = (pathIndex: number, routeIndex: number, params: Params): Params | null => {
+        if (routeIndex === routeSegments.length) {
+            return pathIndex === pathnameSegments.length ? params : null
+        }
+
+        const routeSegment = routeSegments[routeIndex]
+        const rank = segmentRank(routeSegment)
+        if (rank === 1) {
+            for (let nextPathIndex = pathnameSegments.length; nextPathIndex >= pathIndex; nextPathIndex--) {
+                const matched = recurse(nextPathIndex, routeIndex + 1, {...params})
+                if (matched) {
+                    return matched
+                }
+            }
+            return null
+        }
+
+        if (pathIndex >= pathnameSegments.length) {
+            return null
+        }
+
+        const pathnameSegment = safeDecodeSegment(pathnameSegments[pathIndex])
+        const nextParams = {...params}
+        if (rank === 2) {
+            appendParam(nextParams, '*', pathnameSegment)
+        } else if (rank === 3) {
+            appendParam(nextParams, routeSegment.slice(1), pathnameSegment)
+        } else if (safeDecodeSegment(routeSegment) !== pathnameSegment) {
+            return null
+        }
+
+        return recurse(pathIndex + 1, routeIndex + 1, nextParams)
+    }
+
+    return recurse(0, 0, {})
 }

@@ -64,6 +64,44 @@ describe('useResolvePath', () => {
         expect(getResolved()).toBe('#/settings')
     })
 
+    it('in hash mode: base is included in the generated href', () => {
+        history.replaceState(null, '', '/#/app/home')
+        const {Reporter, getResolved} = createResolveReporter('/settings')
+
+        render(<Router mode="hash" base="/app" entry={{
+            children: {'**': {page: <Reporter/>}},
+        }}/>)
+
+        expect(getResolved()).toBe('#/app/settings')
+    })
+
+    it('replaces query and hash without inserting an extra slash', () => {
+        history.replaceState(null, '', '/search?q=old#old')
+        const {Reporter, getResolved} = createResolveReporter('?q=new')
+
+        render(<Router entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getResolved()).toBe('/search?q=new')
+    })
+
+    it('resolves an empty string to the current history path without its hash', () => {
+        history.replaceState(null, '', '/current?x=1#old')
+        const {Reporter, getResolved} = createResolveReporter('')
+
+        render(<Router entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getResolved()).toBe('/current?x=1')
+    })
+
+    it('resolves an empty string to the current hash path and keeps the base', () => {
+        history.replaceState(null, '', '/#/app/current?x=1#old')
+        const {Reporter, getResolved} = createResolveReporter('')
+
+        render(<Router mode="hash" base="/app" entry={{children: {'**': {page: <Reporter/>}}}}/>)
+
+        expect(getResolved()).toBe('#/app/current?x=1')
+    })
+
     it('resolves "../" relative to current path', async () => {
         function ResolveReporter() {
             const resolved = useResolvePath('../settings')
@@ -95,5 +133,26 @@ describe('useResolvePath', () => {
         const { Reporter, getResolved } = createResolveReporter(url)
         render(<Router entry={{ page: <Reporter /> }} />)
         expect(getResolved()).toBe(url.href)
+    })
+
+    it('returns a cross-origin href without trying to convert it to a route path', () => {
+        const url = new URL('https://example.com/path?q=1')
+        const {Reporter, getResolved} = createResolveReporter(url)
+        render(<Router entry={{page: <Reporter/>}}/>)
+
+        expect(getResolved()).toBe(url.href)
+    })
+
+    it('resolves from root when the current pathname is outside base', () => {
+        history.replaceState(null, '', '/outside')
+        const {Reporter, getResolved} = createResolveReporter('/inside')
+
+        render(<Router
+            base="/app"
+            entry={{}}
+            notFound={<Reporter/>}
+        />)
+
+        expect(getResolved()).toBe('/app/inside')
     })
 })

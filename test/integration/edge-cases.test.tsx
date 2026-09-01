@@ -98,7 +98,7 @@ function renderAtPath(routes: RouteItem, path: string) {
 
 // ---- Tests ----
 
-describe('Edge Cases �?Navigation', () => {
+describe('Edge Cases — Navigation', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -195,10 +195,7 @@ describe('Edge Cases �?Navigation', () => {
         expect(screen.getByTestId('about-page')).toBeInTheDocument()
     })
 
-    it.skip('base with trailing slash is normalized', () => {
-        // SKIPPED: truncatePath returns path with leading slash (e.g. '/about'),
-        // and Router does '/' + '/about' = '//about' which doesn't match.
-        // This is a known Router edge case.
+    it('base with trailing slash is normalized', () => {
         history.pushState(null, '', '/app/about')
         render(
             <Router mode="history" base="/app/" entry={createBaseRoutes()} />
@@ -207,7 +204,7 @@ describe('Edge Cases �?Navigation', () => {
         expect(screen.getByTestId('about-page')).toBeInTheDocument()
     })
 
-    it('rapid consecutive navigations �?last one wins', () => {
+    it('rapid consecutive navigations — last one wins', () => {
         function RapidNavTester() {
             const navigate = useNavigate()
             return (
@@ -244,7 +241,7 @@ describe('Edge Cases �?Navigation', () => {
 
         fireEvent.click(screen.getByTestId('rapid-nav'))
 
-        // Last navigation should win �?should be at /items/999
+        // Last navigation should win — should be at /items/999
         expect(screen.getByTestId('item-page')).toBeInTheDocument()
         expect(screen.getByText('Item: 999')).toBeInTheDocument()
     })
@@ -388,7 +385,7 @@ describe('Edge Cases �?Navigation', () => {
     })
 })
 
-describe('Edge Cases �?Router Lifecycle', () => {
+describe('Edge Cases — Router Lifecycle', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -437,7 +434,7 @@ describe('Edge Cases �?Router Lifecycle', () => {
     })
 })
 
-describe('Edge Cases �?Empty and Partial Route Trees', () => {
+describe('Edge Cases — Empty and Partial Route Trees', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -456,12 +453,18 @@ describe('Edge Cases �?Empty and Partial Route Trees', () => {
         unmount()
     })
 
-    it.skip('route with only layout (no page) renders the layout', () => {
-        // SKIPPED: Routes only adds routes with `page` to the match map.
-        // Routes with only `layout` are not directly matchable.
-        renderAtPath(createLayoutOnlyRoute(), '/wrapped')
+    it('a layout-only leaf is not treated as a directly matchable endpoint', () => {
+        history.pushState(null, '', '/wrapped')
+        render(
+            <Router
+                mode="history"
+                entry={createLayoutOnlyRoute()}
+                notFound={<div data-testid="not-found">Not Found</div>}
+            />
+        )
 
-        expect(screen.getByTestId('layout')).toBeInTheDocument()
+        expect(screen.getByTestId('not-found')).toBeInTheDocument()
+        expect(screen.queryByTestId('layout')).not.toBeInTheDocument()
     })
 
     it('route with page=false is treated as no page (isUnset)', () => {
@@ -506,7 +509,7 @@ describe('Edge Cases �?Empty and Partial Route Trees', () => {
     })
 })
 
-describe('Edge Cases �?Deep Nesting', () => {
+describe('Edge Cases — Deep Nesting', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -536,7 +539,7 @@ describe('Edge Cases �?Deep Nesting', () => {
     })
 })
 
-describe('Edge Cases �?useSync and useSyncState', () => {
+describe('Edge Cases — useSync and useSyncState', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -618,7 +621,7 @@ describe('Edge Cases �?useSync and useSyncState', () => {
         const initialRenderCount = renderCount
 
         act(() => {
-            // Set same value �?should NOT trigger re-render
+            // Set same value — should NOT trigger re-render
             triggerUpdate(42)
         })
 
@@ -628,7 +631,7 @@ describe('Edge Cases �?useSync and useSyncState', () => {
     })
 })
 
-describe('Edge Cases �?Router Modes', () => {
+describe('Edge Cases — Router Modes', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -646,18 +649,15 @@ describe('Edge Cases �?Router Modes', () => {
         location.hash = ''
     })
 
-    it('memory mode renders at initial path', () => {
-        // Memory mode: pathname still derived from location.hash (via hash �?new URL)
-        // Set initial hash to trigger correct route
+    it('memory mode starts at its own root and ignores the browser hash', () => {
         location.hash = '#/items/42'
 
         render(
             <Router mode="memory" entry={createBaseRoutes()} />
         )
 
-        // In memory mode, pathname is derived from hash
-        expect(screen.getByTestId('item-page')).toBeInTheDocument()
-        expect(screen.getByText('Item: 42')).toBeInTheDocument()
+        expect(screen.getByTestId('home-page')).toBeInTheDocument()
+        expect(screen.queryByTestId('item-page')).not.toBeInTheDocument()
 
         location.hash = ''
     })
@@ -671,7 +671,7 @@ describe('Edge Cases �?Router Modes', () => {
     })
 })
 
-describe('Edge Cases �?Navigate Component', () => {
+describe('Edge Cases — Navigate Component', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')

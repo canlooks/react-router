@@ -1,7 +1,17 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import React, { createElement as h } from 'react'
-import { Routes, RouterContext } from '../../src'
+import {
+    Routes,
+    RouterContext,
+    RouteLayoutStackIndex,
+    RouteStack,
+    useCurrentRoute,
+    useRouteLayoutStack,
+    useRouteLayoutStackIndex,
+    useRouteStack,
+    useParams,
+} from '../../src'
 import type { RouteItem } from '../../index'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -69,18 +79,6 @@ const groupedEntry: RouteItem = {
     },
 }
 
-const paramEntry: RouteItem = {
-    children: {
-        user: {
-            children: {
-                ':id': {
-                    page: h('div', { 'data-testid': 'user-page' }, 'User'),
-                },
-            },
-        },
-    },
-}
-
 const wildcardEntry: RouteItem = {
     children: {
         docs: {
@@ -130,20 +128,34 @@ describe('Routes', () => {
         expect(screen.getByTestId('page-b')).toBeInTheDocument()
     })
 
-    it('should match dynamic :param route and populate params', () => {
-        const params: Record<string, string | string[]> = {}
-        const contextValue = createMockContext('/user/123')
-        contextValue.params = params
+    it('should match dynamic :param route without mutating the parent router context', () => {
+        const parentParams = Object.freeze({}) as Record<string, string | string[]>
+        const contextValue = createMockContext('/user/123', {params: parentParams})
+        function MatchedParams() {
+            return <div data-testid="user-page">{JSON.stringify(useParams())}</div>
+        }
+        const entry: RouteItem = {
+            children: {
+                user: {
+                    children: {
+                        ':id': {
+                            page: <MatchedParams/>,
+                        },
+                    },
+                },
+            },
+        }
 
         render(
             h(RouterContext.Provider, { value: contextValue },
-                h(Routes, { entry: paramEntry }),
+                h(Routes, {entry}),
             ),
         )
 
         expect(screen.getByTestId('user-page')).toBeInTheDocument()
-        // Routes should have populated params
-        expect(params.id).toBe('123')
+        expect(screen.getByTestId('user-page')).toHaveTextContent('{"id":"123"}')
+        expect(contextValue.params).toBe(parentParams)
+        expect(parentParams).toEqual({})
     })
 
     it('should match * wildcard for single segment', () => {
@@ -180,5 +192,82 @@ describe('Routes', () => {
         )
         expect(screen.getByTestId('not-found')).toBeInTheDocument()
         expect(screen.queryByTestId('root-page')).not.toBeInTheDocument()
+    })
+
+    it('should isolate notFound from any surrounding route stack context', () => {
+        const surroundingRoute: RouteItem = {
+            page: h('div'),
+            layout: h('div'),
+        }
+        function NotFoundContextProbe() {
+            const routeStack = useRouteStack()
+            const layoutStack = useRouteLayoutStack()
+            const layoutIndex = useRouteLayoutStackIndex()
+            const currentRoute = useCurrentRoute()
+            return (
+                <div data-testid="not-found-context">
+                    <span data-testid="not-found-route-count">{routeStack.length}</span>
+                    <span data-testid="not-found-layout-count">{layoutStack.length}</span>
+                    <span data-testid="not-found-layout-index">{layoutIndex}</span>
+                    <span data-testid="not-found-current-route">{currentRoute ? 'set' : 'unset'}</span>
+                </div>
+            )
+        }
+        const contextValue = createMockContext('/nonexistent')
+
+        render(
+            <RouteStack value={[surroundingRoute]}>
+                <RouteLayoutStackIndex value={4}>
+                    <RouterContext.Provider value={contextValue}>
+                        <Routes entry={simpleEntry} notFound={<NotFoundContextProbe/>}/>
+                    </RouterContext.Provider>
+                </RouteLayoutStackIndex>
+            </RouteStack>,
+        )
+
+        expect(screen.getByTestId('not-found-context')).toBeInTheDocument()
+        expect(screen.getByTestId('not-found-route-count')).toHaveTextContent('0')
+        expect(screen.getByTestId('not-found-layout-count')).toHaveTextContent('0')
+        expect(screen.getByTestId('not-found-layout-index')).toHaveTextContent('0')
+        expect(screen.getByTestId('not-found-current-route')).toHaveTextContent('unset')
+    })
+
+    it('should prefer an exact route over a later dynamic sibling', () => {
+        const entry: RouteItem = {
+            children: {
+                settings: {
+                    page: h('div', {'data-testid': 'settings-page'}, 'Settings'),
+                },
+                ':id': {
+                    page: h('div', {'data-testid': 'dynamic-page'}, 'Dynamic'),
+                },
+            },
+        }
+
+        renderRoutes('/settings', entry)
+
+        expect(screen.getByTestId('settings-page')).toBeInTheDocument()
+        expect(screen.queryByTestId('dynamic-page')).not.toBeInTheDocument()
+    })
+
+    it('should rebuild route maps when the entry prop changes', () => {
+        const contextValue = createMockContext('/')
+        const firstEntry: RouteItem = {
+            page: h('div', {'data-testid': 'first-page'}, 'First'),
+        }
+        const secondEntry: RouteItem = {
+            page: h('div', {'data-testid': 'second-page'}, 'Second'),
+        }
+        const renderTree = (entry: RouteItem) => h(
+            RouterContext.Provider,
+            {value: contextValue},
+            h(Routes, {entry}),
+        )
+        const {rerender} = render(renderTree(firstEntry))
+
+        rerender(renderTree(secondEntry))
+
+        expect(screen.getByTestId('second-page')).toBeInTheDocument()
+        expect(screen.queryByTestId('first-page')).not.toBeInTheDocument()
     })
 })

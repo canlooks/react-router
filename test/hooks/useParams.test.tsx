@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import React from 'react'
 import { Router, useRouter, useParams } from '../../src'
+import type {Params, RouteItem} from '../../index'
 
 describe('useParams', () => {
     beforeEach(() => {
@@ -8,7 +9,7 @@ describe('useParams', () => {
     })
 
     it('static route returns empty params', () => {
-        let captured: Record<string, string> | null = null
+        let captured: Params | null = null
         const Reporter = () => {
             const { params } = useRouter()
             captured = params
@@ -105,5 +106,134 @@ describe('useParams', () => {
 
         act(() => fireEvent.click(screen.getByTestId('nav-files')))
         await waitFor(() => expect(screen.getByTestId('files-page')).toHaveTextContent('/files/a/b'))
+    })
+
+    it('decodes percent-encoded params once and preserves encoded slash boundaries', () => {
+        history.replaceState(null, '', '/device/%E4%B8%AD/a%2Fb/%252F')
+
+        function Reporter() {
+            return <div data-testid="decoded-params">{JSON.stringify(useParams())}</div>
+        }
+
+        render(<Router entry={{
+            children: {
+                device: {
+                    children: {
+                        ':name': {
+                            children: {
+                                ':path': {
+                                    children: {':encoded': {page: <Reporter/>}},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        }}/>)
+
+        expect(screen.getByTestId('decoded-params')).toHaveTextContent(
+            '{"name":"中","path":"a/b","encoded":"%2F"}',
+        )
+    })
+
+    describe('entry updates', () => {
+        function ParamsProbe({testId = 'entry-params'}: {testId?: string}) {
+            const routerParams = useRouter().params
+            const params = useParams()
+            return (
+                <div
+                    data-testid={testId}
+                    data-context-equal={String(routerParams === params)}
+                >
+                    {JSON.stringify(params)}
+                </div>
+            )
+        }
+
+        it('clears dynamic params when the same pathname becomes static', () => {
+            history.replaceState(null, '', '/value')
+            const {rerender} = render(<Router entry={{
+                children: {':id': {page: <ParamsProbe/>}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"id":"value"}')
+
+            rerender(<Router entry={{
+                children: {value: {page: <ParamsProbe/>}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{}')
+        })
+
+        it('replaces params instead of merging them when a parameter is renamed', () => {
+            history.replaceState(null, '', '/value')
+            const {rerender} = render(<Router entry={{
+                children: {':id': {page: <ParamsProbe/>}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"id":"value"}')
+
+            rerender(<Router entry={{
+                children: {':slug': {page: <ParamsProbe/>}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"slug":"value"}')
+            expect(screen.getByTestId('entry-params')).not.toHaveTextContent('id')
+        })
+
+        it('provides empty params to notFound after a dynamic route is removed', () => {
+            history.replaceState(null, '', '/value')
+            const {rerender} = render(<Router
+                entry={{children: {':id': {page: <ParamsProbe/>}}}}
+                notFound={<ParamsProbe testId="not-found-params"/>}
+            />)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"id":"value"}')
+
+            rerender(<Router
+                entry={{children: {other: {page: <div>Other</div>}}}}
+                notFound={<ParamsProbe testId="not-found-params"/>}
+            />)
+
+            expect(screen.getByTestId('not-found-params')).toHaveTextContent('{}')
+        })
+
+        it('updates params when both entries reuse the same ReactNode', () => {
+            history.replaceState(null, '', '/value')
+            const sharedPage = <ParamsProbe/>
+            const {rerender} = render(<Router entry={{
+                children: {':id': {page: sharedPage}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"id":"value"}')
+
+            rerender(<Router entry={{
+                children: {':slug': {page: sharedPage}},
+            }}/>)
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"slug":"value"}')
+            expect(screen.getByTestId('entry-params')).toHaveAttribute('data-context-equal', 'true')
+        })
+
+        it('does not leak params across entry updates in StrictMode', () => {
+            history.replaceState(null, '', '/value')
+            const renderTree = (entry: RouteItem) => (
+                <React.StrictMode>
+                    <Router entry={entry}/>
+                </React.StrictMode>
+            )
+            const {rerender} = render(renderTree({
+                children: {':id': {page: <ParamsProbe/>}},
+            }))
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{"id":"value"}')
+
+            rerender(renderTree({
+                children: {value: {page: <ParamsProbe/>}},
+            }))
+
+            expect(screen.getByTestId('entry-params')).toHaveTextContent('{}')
+            expect(screen.getByTestId('entry-params')).toHaveAttribute('data-context-equal', 'true')
+        })
     })
 })

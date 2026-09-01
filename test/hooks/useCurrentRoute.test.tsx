@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import React from 'react'
 import { Router, useRouter, useCurrentRoute } from '../../src'
+import type {RouteItem} from '../../index'
 
 describe('useCurrentRoute', () => {
     beforeEach(() => {
@@ -43,7 +44,7 @@ describe('useCurrentRoute', () => {
 
     it('custom metadata on RouteItem is accessible', async () => {
         function MetadataReporter() {
-            const current = useCurrentRoute<{ title: string }>()
+            const current = useCurrentRoute() as RouteItem<{title: string}>
             return <div data-testid="meta-page">{current?.title ?? 'no-title'}</div>
         }
 
@@ -52,15 +53,15 @@ describe('useCurrentRoute', () => {
             return <button data-testid="nav-custom" onClick={() => navigate('/custom')}>Go to custom</button>
         }
 
-        render(
-            <Router entry={{
-                title: 'Root',
-                page: <HomePage />,
-                children: {
-                    custom: { title: 'Custom Page', page: <MetadataReporter /> },
-                },
-            }} />
-        )
+        const entry: RouteItem<{title: string}> = {
+            title: 'Root',
+            page: <HomePage />,
+            children: {
+                custom: {title: 'Custom Page', page: <MetadataReporter />},
+            },
+        }
+
+        render(<Router entry={entry}/>)
 
         act(() => fireEvent.click(screen.getByTestId('nav-custom')))
         await waitFor(() => expect(screen.getByTestId('meta-page')).toHaveTextContent('Custom Page'))

@@ -18,6 +18,8 @@ A lightweight, tree-structured routing framework for React. Define your routes a
 npm i @canlooks/react-router
 ```
 
+The package ships explicit CommonJS and ESM entry points and supports Node.js 18 or newer.
+
 ## Quick Start
 
 ```tsx
@@ -160,12 +162,22 @@ The `Router` component supports three modes via the `mode` prop:
 <Router mode="memory" entry={routes} />
 ```
 
+`history` and `hash` modes use the browser history as their source of truth, including the
+`state` associated with each entry. `memory` mode starts at `/`, keeps its own entries and
+state, and never reads or changes the browser URL.
+
 You can also set a `base` path for the router:
 
 ```tsx
 <Router base="/app" mode="history" entry={routes} />
 // All routes are now relative to /app
 ```
+
+`base` is a pathname-only, literal prefix. Characters such as `.` are not interpreted as
+regular expressions. String destinations are resolved inside this base; a same-origin `URL`
+object is treated as an absolute browser URL and must already be inside the base. Literal
+Unicode and equivalent percent-encoded segments are normalized before matching, while an
+encoded slash (`%2F`) remains inside its original segment.
 
 ## API Reference
 
@@ -202,6 +214,11 @@ Navigation link. Renders as an `<a>` tag by default.
 <Link component="button" to="/settings">Settings</Link>
 ```
 
+Only an unmodified primary-button click targeting the current window is handled as SPA
+navigation. Ctrl/Cmd/Shift/Alt clicks, middle clicks, downloads, external links,
+`target="_blank"`, `rel="external"`, and events cancelled by a consumer `onClick` keep their
+native browser behavior.
+
 #### `<Navigate>`
 
 Imperative navigation that triggers on render.
@@ -211,6 +228,10 @@ Imperative navigation that triggers on render.
 <Navigate to="/dashboard" replace />
 <Navigate delta={-1} />
 ```
+
+Within one mounted component instance, the same navigation intent is executed once. This
+keeps `<Navigate>` and `<Redirect>` idempotent under React Strict Mode and parent rerenders.
+Change the destination, or remount with a different React `key`, to issue a new intent.
 
 #### `<Redirect>`
 
@@ -280,6 +301,11 @@ const { userId, postId } = useParams()
 // userId = '42', postId = '101'
 ```
 
+Path parameters are percent-decoded exactly once after segment matching. Encoded slashes such
+as `%2F` remain within one matched segment and are returned as `/`; malformed percent encoding
+is returned unchanged instead of throwing during render. Repeated parameter names return a
+`string[]`.
+
 #### `useSearchParams()` / `useQuery()`
 
 Returns the URL search params as a `URLSearchParams` instance.
@@ -324,11 +350,28 @@ Resolves a relative path against the current router context (accounting for `bas
 const resolvedPath = useResolvePath('../settings')
 ```
 
+Relative paths use standard URL resolution. Query-only and hash-only destinations replace the
+corresponding URL component without inserting an extra slash. Complete cross-origin URLs are
+returned unchanged and are not intercepted by `Link`. `undefined` means “no destination” and
+returns an empty string; `''` is a valid empty URL reference and resolves to the current pathname
+and query with the current hash removed.
+
+#### URL Path Utilities
+
+`joinPath` preserves the complete authority of an absolute URL, including username, password,
+host and port. Relative references are supported for hierarchical URLs such as HTTP(S), FTP and
+file URLs. Joining a relative reference to an opaque URL such as `mailto:` or `data:` throws a
+`TypeError`; a later absolute URL still replaces the earlier value.
+
 ## Advanced Usage
 
 ### Nested Routers
 
-You can nest `<Router>` components. A child `Router` can detect and call the parent's update method to keep nested routing in sync.
+You can nest `<Router>` components. All mounted `history` and `hash` routers subscribe to the
+same browser-location store, so a push, replace, state update or browser traversal from a parent,
+child or sibling router updates every browser router automatically. Each router still applies its
+own `base` when deriving its internal pathname. `memory` routers use private histories and are not
+affected by browser-router updates.
 
 ### Custom Route Metadata
 
@@ -371,12 +414,15 @@ function Breadcrumbs() {
 The router supports scroll position restoration via the `scrollRestore` option on navigation:
 
 ```tsx
-// Preserve scroll position (default)
+// Preserve the current scroll position (default)
 navigate('/page', { scrollRestore: true })
 
-// Reset scroll to top
+// Reset to the top after the destination route has committed
 navigate('/page', { scrollRestore: false })
 ```
+
+The router does not mutate the global `history.scrollRestoration` setting. Browser back and
+forward traversal therefore continues to use the browser or application's configured policy.
 
 ### Not Found Handling
 
@@ -385,6 +431,10 @@ Provide a `notFound` prop to the `Router` to render custom content when no route
 ```tsx
 <Router entry={routes} notFound={<NotFoundPage />} />
 ```
+
+`notFound` renders inside the unmatched Router's context with an empty route stack and layout
+index `0`. In a nested Router it therefore does not inherit the parent Router's route or layout
+stack; `useCurrentRoute()` returns `undefined` there.
 
 Or define a catch-all route as the last child:
 

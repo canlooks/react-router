@@ -1,7 +1,19 @@
 import React, {memo} from 'react'
 import {LinkProps, To} from '..'
 import {useRouter} from './router'
-import {dropStartSlash, joinPath, resolvePath} from './utils'
+import {resolveNavigation} from './location'
+
+function useResolvedNavigation(to?: To) {
+    const {base, mode, pathname, location} = useRouter()
+    if (typeof to === 'undefined') {
+        return null
+    }
+    return resolveNavigation(to, {
+        pathname: pathname || '/',
+        search: location.search,
+        hash: location.hash
+    }, mode, base)
+}
 
 export const Link = memo(({
     component: Component = 'a',
@@ -13,8 +25,8 @@ export const Link = memo(({
     ...props
 }: LinkProps) => {
     const {navigate} = useRouter()
-
-    const resolvedPath = useResolvePath(to)
+    const resolved = useResolvedNavigation(to)
+    const resolvedPath = resolved?.href ?? ''
 
     const usingDelta = typeof delta === 'number'
 
@@ -22,16 +34,32 @@ export const Link = memo(({
         ...!usingDelta && {href: resolvedPath},
         onClick(e: React.MouseEvent<HTMLAnchorElement>) {
             props.onClick?.(e)
+
+            if (e.defaultPrevented ||
+                e.button !== 0 ||
+                e.ctrlKey ||
+                e.metaKey ||
+                e.shiftKey ||
+                e.altKey) {
+                return
+            }
+
+            const target = e.currentTarget.getAttribute('target')
+            if ((target && target.toLowerCase() !== '_self') ||
+                e.currentTarget.hasAttribute('download') ||
+                e.currentTarget.getAttribute('rel')?.toLowerCase().split(/\s+/).includes('external')) {
+                return
+            }
+
             if (usingDelta) {
                 navigate(delta)
             } else {
-                if (typeof to === 'undefined') {
+                if (typeof to === 'undefined' || !resolved ||
+                    resolved.externalTarget || resolved.outsideBase) {
                     return
                 }
-                if (!e.ctrlKey) {
-                    e.preventDefault()
-                    navigate(to, {replace, scrollRestore, state})
-                }
+                e.preventDefault()
+                navigate(to, {replace, scrollRestore, state})
             }
         }
     }
@@ -40,13 +68,6 @@ export const Link = memo(({
 })
 
 export function useResolvePath(to?: To) {
-    const {base, mode, pathname} = useRouter()
-    if (!to) {
-        return ''
-    }
-    const resolvedPath = resolvePath(to, pathname)
-    if (mode === 'history') {
-        return joinPath(base, dropStartSlash(resolvedPath))
-    }
-    return '#' + resolvedPath
+    const resolved = useResolvedNavigation(to)
+    return resolved?.href ?? ''
 }

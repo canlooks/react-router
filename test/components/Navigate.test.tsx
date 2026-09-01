@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, act, cleanup } from '@testing-library/react'
-import React, { createElement as h } from 'react'
+import React, { createElement as h, StrictMode } from 'react'
 import { Navigate, Redirect, RouterContext } from '../../src'
 import type { RouteItem } from '../../index'
 
@@ -35,7 +35,7 @@ function renderWithMockRouter(
     const result = render(
         h(RouterContext.Provider, { value: contextValue }, children),
     )
-    return { ...result, navigate, replace }
+    return { ...result, navigate, replace, contextValue }
 }
 
 // ── Navigate tests ───────────────────────────────────────────────────────────
@@ -120,6 +120,50 @@ describe('Navigate', () => {
 
         // Navigate returns null, so container should have no visible content
         expect(container.innerHTML).toBe('')
+    })
+
+    it('should execute only once when StrictMode replays effects', () => {
+        const {navigate} = renderWithMockRouter(
+            h(StrictMode, null, h(Navigate, {to: '/strict'})),
+        )
+
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not navigate again when the parent rerenders the same intent', () => {
+        const {navigate, rerender, contextValue} = renderWithMockRouter(
+            h(Navigate, {to: '/same', state: {render: 1}}),
+        )
+
+        rerender(h(
+            RouterContext.Provider,
+            {value: contextValue},
+            h(Navigate, {to: '/same', state: {render: 2}}),
+        ))
+
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('should navigate again when the target changes', () => {
+        const {navigate, rerender, contextValue} = renderWithMockRouter(
+            h(Navigate, {to: '/first'}),
+        )
+
+        rerender(h(
+            RouterContext.Provider,
+            {value: contextValue},
+            h(Navigate, {to: '/second'}),
+        ))
+
+        expect(navigate).toHaveBeenCalledTimes(2)
+        expect(navigate).toHaveBeenLastCalledWith('/second', expect.objectContaining({}))
+    })
+
+    it('uses URL href as the stable navigation intent key', () => {
+        const url = new URL('/from-url', location.origin)
+        const {navigate} = renderWithMockRouter(h(Navigate, {to: url}))
+
+        expect(navigate).toHaveBeenCalledWith(url, expect.objectContaining({}))
     })
 })
 

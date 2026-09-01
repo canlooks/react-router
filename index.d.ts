@@ -51,8 +51,8 @@ declare namespace Router {
 
         params: Params
 
-        /** @private */
-        updateClonedLocation?(): void
+        /** @deprecated Browser routers synchronize automatically. @private */
+        updateClonedLocation?(): boolean
         /** @private */
         updateHash?(hash: string): void
     }
@@ -60,10 +60,10 @@ declare namespace Router {
     type RouterProps = {
         /** default is `history` */
         mode?: Mode
-        /** default is `/` */
+        /** Pathname-only base. Unicode and percent-encoded segments are matched canonically. Default is `/`. */
         base?: string
         entry: RouteItem
-        /** Render when all routes not match. */
+        /** Render inside an empty route-stack context when no route matches. */
         notFound?: ReactNode
     }
 
@@ -82,7 +82,7 @@ declare namespace Router {
     /** @alias {@link useSearchParams} */
     function useQuery(): URLSearchParams
 
-    function useParams(): Record<string, string>
+    function useParams(): Params
 
     /**
      * ---------------------------------------------------------------
@@ -95,11 +95,11 @@ declare namespace Router {
 
     function useRouteLayoutStackIndex(): number
 
-    function useCurrentRoute<T extends RouteItem = RouteItem>(): T
+    function useCurrentRoute<T extends RouteItem = RouteItem>(): T | undefined
 
     function useOutlet(): ReactElement | null
 
-    function Outlet(): ReactElement
+    function Outlet(): ReactElement | null
 
 
     /**
@@ -114,7 +114,7 @@ declare namespace Router {
         delta?: number
     }
 
-    function Navigate(props: NavigateProps): ReactElement
+    function Navigate(props: NavigateProps): ReactElement | null
 
     type RedirectProps = Omit<NavigateProps, 'replace'>
 
@@ -122,7 +122,7 @@ declare namespace Router {
      * @alias {@link Navigate} but with replace
      * @param props
      */
-    function Redirect(props: RedirectProps): ReactElement
+    function Redirect(props: RedirectProps): ReactElement | null
 
 
     /**
@@ -136,6 +136,11 @@ declare namespace Router {
 
     function Link<C extends ElementType = 'a'>(props: LinkProps<C>): ReactElement
 
+    /**
+     * Resolve a destination in the current Router mode and base.
+     * `undefined` returns `''`; an empty string is a valid URL reference and
+     * resolves to the current pathname/query without the current hash.
+     */
     function useResolvePath(to?: To): string
 
     /**
@@ -155,22 +160,6 @@ declare namespace Router {
      */
     function useSyncState<T>(initialState: T | (() => T)): [RefObject<T>, Dispatch<SetStateAction<T>>]
     function useSyncState<T = undefined>(): [RefObject<T | undefined>, Dispatch<SetStateAction<T | undefined>>]
-
-    /**
-     * @private 复制location对象，用于存储在react的state中以更新组件
-     */
-    function cloneLocation(): ILocation
-
-    /**
-     * @private 判断值是否为字符串或数字
-     * @param value
-     */
-    function strOrNum(value: any): value is string | number
-
-    /**
-     * @private 浅比较，判断location是否发生改变
-     */
-    function isLocationChanged(clonedLocation: ILocation): boolean
 
     /**
      * @private 全部统一使用"/"
@@ -197,13 +186,8 @@ declare namespace Router {
     function unifyPath(path: string): string
 
     /**
-     * 去掉路径的最后一段，执行该方法前需要先执行{@link unifySlash}
-     * @param path
-     */
-    function dropLastPortion(path: string): string
-
-    /**
-     * 拼接路径
+     * 拼接路径。完整 URL 会保留 username/password/host/port；相对引用要求
+     * 前一个 URL 使用分层协议，mailto/data 等不透明 URL 会抛出 TypeError。
      * @param paths
      */
     function joinPath(...paths: string[]): string

@@ -16,7 +16,7 @@ function createCapture() {
 }
 
 /** Entry with catch-all "**" so the page renders for ANY pathname. */
-function makeEntry(Page: () => JSX.Element): RouteItem {
+function makeEntry(Page: () => React.JSX.Element): RouteItem {
     return {
         children: {
             '**': { page: <Page /> }
@@ -78,6 +78,19 @@ describe('Memory Mode', () => {
         expect(window.location.href).toBe(hrefBefore)
     })
 
+    it('navigate updates the memory pathname used for matching', async () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="memory" entry={makeEntry(Page)}/>)
+
+        await act(async () => {
+            getRouter().navigate('/a?query=1#section')
+        })
+
+        expect(getRouter().pathname).toBe('/a')
+        expect(getRouter().location.search).toBe('?query=1')
+        expect(getRouter().location.hash).toBe('#section')
+    })
+
     // ── state tracking ────────────────────────────────────────────────────
 
     it('navigate with state sets innerState on the router context', async () => {
@@ -112,6 +125,34 @@ describe('Memory Mode', () => {
         await waitFor(() => {
             expect(getRouter().state).toBe('second-state')
         })
+    })
+
+    it('restores the state associated with each entry on back and forward', async () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="memory" entry={makeEntry(Page)}/>)
+
+        await act(async () => getRouter().navigate('/first', {state: {entry: 'first'}}))
+        await act(async () => getRouter().navigate('/second', {state: {entry: 'second'}}))
+        await act(async () => getRouter().back())
+
+        expect(getRouter().pathname).toBe('/first')
+        expect(getRouter().state).toEqual({entry: 'first'})
+
+        await act(async () => getRouter().forward())
+        expect(getRouter().pathname).toBe('/second')
+        expect(getRouter().state).toEqual({entry: 'second'})
+    })
+
+    it('supports functional setState on the current memory entry', async () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="memory" entry={makeEntry(Page)}/>)
+
+        await act(async () => getRouter().setState({count: 1}))
+        await act(async () => getRouter().setState((previous: {count: number}) => ({
+            count: previous.count + 1,
+        })))
+
+        expect(getRouter().state).toEqual({count: 2})
     })
 
     // ── sequential navigation (no crashes, no side effects) ───────────────
@@ -249,6 +290,14 @@ describe('Memory Mode', () => {
         expect(hashchangeCalls).toHaveLength(0)
     })
 
+    it('ignores private browser snapshot synchronization in memory mode', () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="memory" entry={makeEntry(Page)}/>)
+
+        expect(getRouter().updateClonedLocation?.()).toBe(false)
+        expect(getRouter().pathname).toBe('/')
+    })
+
     // ── replace behavior ──────────────────────────────────────────────────
 
     it('navigate with replace: true does not call history.replaceState', async () => {
@@ -280,5 +329,16 @@ describe('Memory Mode', () => {
         await waitFor(() => {
             expect(getRouter().state).toBe('replaced')
         })
+    })
+
+    it('replace changes only the current entry and preserves earlier entries', async () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="memory" entry={makeEntry(Page)}/>)
+
+        await act(async () => getRouter().navigate('/first'))
+        await act(async () => getRouter().replace('/second'))
+        await act(async () => getRouter().back())
+
+        expect(getRouter().pathname).toBe('/')
     })
 })

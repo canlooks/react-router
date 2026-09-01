@@ -3,4 +3,16 @@ export * from './navigate'
 export * from './outlet'
 export * from './router'
 export * from './routes'
-export * from './utils'
+export {
+    dropEndSlash,
+    dropStartSlash,
+    isUnset,
+    joinPath,
+    matchPath,
+    resolvePath,
+    truncatePath,
+    unifyPath,
+    unifySlash,
+    useSync,
+    useSyncState
+} from './utils'

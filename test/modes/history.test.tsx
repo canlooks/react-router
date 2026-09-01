@@ -12,7 +12,6 @@ function createCapture() {
     let captured: ReturnType<typeof useRouter> | null = null
     const Page = () => {
         captured = useRouter()
-        console.log('captured', captured)
         return <div data-testid="tester">test</div>
     }
     return {Page, getRouter: () => captured!}
@@ -31,6 +30,7 @@ function makeEntry(Page: () => JSX.Element): RouteItem {
 
 describe('History Mode', () => {
     beforeEach(() => {
+        history.replaceState(null, '', '/')
         vi.spyOn(history, 'pushState').mockImplementation(() => {
         })
         vi.spyOn(history, 'replaceState').mockImplementation(() => {
@@ -38,6 +38,8 @@ describe('History Mode', () => {
         vi.spyOn(history, 'back').mockImplementation(() => {
         })
         vi.spyOn(history, 'forward').mockImplementation(() => {
+        })
+        vi.spyOn(window, 'scrollTo').mockImplementation(() => {
         })
     })
 
@@ -81,7 +83,7 @@ describe('History Mode', () => {
         expect(history.pushState).not.toHaveBeenCalled()
     })
 
-    it('navigate with scrollRestore: false sets history.scrollRestoration = "manual"', async () => {
+    it('navigate with scrollRestore: false resets scroll after the route commit', async () => {
         const {Page, getRouter} = createCapture()
         render(<Router mode="history" entry={makeEntry(Page)}/>)
 
@@ -89,10 +91,10 @@ describe('History Mode', () => {
             getRouter().navigate('/a', {scrollRestore: false})
         })
 
-        expect(history.scrollRestoration).toBe('manual')
+        expect(window.scrollTo).toHaveBeenCalledWith({left: 0, top: 0, behavior: 'auto'})
     })
 
-    it('navigate with scrollRestore: true (default) sets history.scrollRestoration = "auto"', async () => {
+    it('navigate with scrollRestore: true preserves scroll and does not mutate browser restoration', async () => {
         history.scrollRestoration = 'manual'
         const {Page, getRouter} = createCapture()
         render(<Router mode="history" entry={makeEntry(Page)}/>)
@@ -101,7 +103,8 @@ describe('History Mode', () => {
             getRouter().navigate('/a', {scrollRestore: true})
         })
 
-        expect(history.scrollRestoration).toBe('auto')
+        expect(window.scrollTo).not.toHaveBeenCalled()
+        expect(history.scrollRestoration).toBe('manual')
     })
 
     // ── setState ──────────────────────────────────────────────────────────
@@ -115,6 +118,86 @@ describe('History Mode', () => {
         })
 
         expect(history.replaceState).toHaveBeenCalledWith({key: 'value'}, '')
+    })
+
+    it('keeps the deprecated browser synchronization shim as a successful publication', async () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+
+        let published: boolean | undefined
+        await act(async () => {
+            published = getRouter().updateClonedLocation?.()
+        })
+
+        expect(published).toBe(true)
+    })
+
+    it('initializes router state from the current history entry', () => {
+        vi.mocked(history.replaceState).mockRestore()
+        history.replaceState({entry: 'initial'}, '', '/')
+        const {Page, getRouter} = createCapture()
+
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+
+        expect(getRouter().state).toEqual({entry: 'initial'})
+    })
+
+    it('supports functional setState without writing the updater function', async () => {
+        vi.mocked(history.replaceState).mockRestore()
+        history.replaceState({count: 1}, '', '/')
+        const replaceState = vi.spyOn(history, 'replaceState')
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+
+        await act(async () => {
+            getRouter().setState((previous: {count: number}) => ({count: previous.count + 1}))
+        })
+
+        expect(replaceState).toHaveBeenLastCalledWith({count: 2}, '')
+        expect(history.state).toEqual({count: 2})
+        expect(getRouter().state).toEqual({count: 2})
+    })
+
+    it('composes consecutive functional setState calls before React rerenders', async () => {
+        vi.mocked(history.replaceState).mockRestore()
+        history.replaceState({count: 1}, '', '/')
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+
+        await act(async () => {
+            getRouter().setState((previous: {count: number}) => ({count: previous.count + 1}))
+            getRouter().setState((previous: {count: number}) => ({count: previous.count + 1}))
+        })
+
+        expect(history.state).toEqual({count: 3})
+        expect(getRouter().state).toEqual({count: 3})
+    })
+
+    it('restores state from popstate event entries', async () => {
+        vi.mocked(history.pushState).mockRestore()
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+
+        await act(async () => {
+            history.pushState({entry: 'first'}, '', '/first')
+            window.dispatchEvent(new PopStateEvent('popstate', {state: {entry: 'first'}}))
+        })
+
+        await waitFor(() => {
+            expect(getRouter().pathname).toBe('/first')
+            expect(getRouter().state).toEqual({entry: 'first'})
+        })
+    })
+
+    it('leaves React state unchanged when history rejects an uncloneable value', () => {
+        const {Page, getRouter} = createCapture()
+        render(<Router mode="history" entry={makeEntry(Page)}/>)
+        vi.mocked(history.replaceState).mockImplementation(() => {
+            throw new DOMException('not cloneable', 'DataCloneError')
+        })
+
+        expect(() => getRouter().setState(() => 'next')).toThrowError(DOMException)
+        expect(getRouter().state).toBeNull()
     })
 
     // ── back & forward ────────────────────────────────────────────────────

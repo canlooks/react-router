@@ -243,7 +243,7 @@ describe('Nested Layouts', () => {
             layout: <RootLayout />,
             children: {
                 pass: {
-                    // No layout, no page �?should pass through to children
+                    // No layout, no page — should pass through to children
                     children: {
                         target: {
                             page: <div data-testid="pass-target">Reached</div>,
@@ -275,13 +275,13 @@ describe('useRouteStack / useRouteLayoutStack / useRouteLayoutStackIndex', () =>
     it('useRouteLayoutStack returns layout routes at /dashboard/settings/general', () => {
         renderAtPath(createDebugRoutes(), '/dashboard/settings/general')
 
-        // Stack: [root, dashboard, settings, tab] �?layout stack: [root(layout), dashboard(layout), settings(layout), tab(last)]
+        // Stack: [root, dashboard, settings, tab] — layout stack: [root(layout), dashboard(layout), settings(layout), tab(last)]
         expect(screen.getByTestId('route-count').textContent).toBe('4')
         expect(screen.getByTestId('layout-count').textContent).toBe('4')
     })
 
     it('useRouteLayoutStackIndex increments through layout levels', () => {
-        // At root page (inside RootLayout �?Outlet �?page), index = 2:
+        // At root page (inside RootLayout → Outlet → page), index = 2:
         // index 0 = Router entry, index 1 = root.layout, index 2 = root.page
         renderAtPath(createDebugRoutes(), '/')
         expect(screen.getByTestId('layout-index').textContent).toBe('2')
@@ -330,13 +330,13 @@ describe('useRouteStack / useRouteLayoutStack / useRouteLayoutStackIndex', () =>
 
         // RouteStackDebug inside section-layout should see:
         // layout-stack: [root, section, page(last)], so 3 layout routes
-        // current-route: index 2 �?layoutStack[1] = section (has layout)
+        // current-route: index 2 → layoutStack[1] = section (has layout)
         expect(screen.getByTestId('layout-count').textContent).toBe('3')
         expect(screen.getByTestId('current-route-type').textContent).toBe('has-layout')
     })
 })
 
-describe('Nested Layouts �?Edge Cases', () => {
+describe('Nested Layouts — Edge Cases', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')

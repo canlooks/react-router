@@ -55,9 +55,9 @@ function DashboardLayout({ children }: { children?: React.ReactNode }) {
 
 /** Reads custom metadata from current route and entire stack */
 function RouteInfo() {
-    const route = useCurrentRoute<AppRoute>()
-    const stack = useRouteStack<AppRoute>()
-    const layoutStack = useRouteLayoutStack<AppRoute>()
+    const route = useCurrentRoute() as AppRoute
+    const stack = useRouteStack() as AppRoute[]
+    const layoutStack = useRouteLayoutStack() as AppRoute[]
 
     return (
         <div data-testid="route-info">
@@ -117,7 +117,7 @@ function renderAtPath(path: string) {
 
 // ---- Tests ----
 
-describe('Custom Metadata �?RouteItem<T>', () => {
+describe('Custom Metadata — RouteItem<T>', () => {
     afterEach(() => {
         cleanup()
         cleanup()
@@ -168,9 +168,9 @@ describe('Custom Metadata �?RouteItem<T>', () => {
         // layoutStack at /dashboard/settings: [root(no layout, removed), dashboard(layout), settings(last)]
         // But root has no layout, so it's filtered out UNLESS it's the last (which it isn't here)
         // Wait: root is index 0, dashboard is index 1, settings is index 2 (last)
-        // root: no layout, not last �?filtered out
-        // dashboard: has layout �?kept
-        // settings: last �?kept
+        // root: no layout, not last — filtered out
+        // dashboard: has layout — kept
+        // settings: last — kept
         // So layoutStack = [dashboard, settings]
         expect(screen.getAllByTestId('layout-stack-depth')[0].textContent).toBe('2')
     })
@@ -221,7 +221,7 @@ describe('Custom Metadata �?RouteItem<T>', () => {
     })
 })
 
-describe('Custom Metadata �?TypeScript Generic Safety', () => {
+describe('Custom Metadata — TypeScript Generic Safety', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -245,7 +245,7 @@ describe('Custom Metadata �?TypeScript Generic Safety', () => {
         }
 
         function TypedRouteInfo() {
-            const route = useCurrentRoute<MyRoute>()
+            const route = useCurrentRoute() as MyRoute
             return (
                 <div data-testid="typed-info">
                     <span data-testid="typed-id">{route?.id}</span>
@@ -279,7 +279,7 @@ describe('Custom Metadata �?TypeScript Generic Safety', () => {
         type ChainRoute = RouteItem<{ level: number }>
 
         function ChainDebug() {
-            const stack = useRouteStack<ChainRoute>()
+            const stack = useRouteStack() as ChainRoute[]
             return (
                 <div data-testid="chain-debug">
                     <span data-testid="chain-length">{stack.length}</span>

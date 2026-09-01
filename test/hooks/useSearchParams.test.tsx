@@ -52,14 +52,13 @@ describe('useSearchParams', () => {
     })
 
     it('URL without query → .toString() is ""', () => {
-        let captured: URLSearchParams | null = null
         const Reporter = () => {
-            captured = useSearchParams()
-            return <div data-testid="empty-search">empty</div>
+            const params = useSearchParams()
+            return <div data-testid="empty-search">{params.toString()}</div>
         }
 
         render(<Router entry={{ page: <Reporter /> }} />)
-        expect(captured?.toString()).toBe('')
+        expect(screen.getByTestId('empty-search')).toBeEmptyDOMElement()
     })
 
     it('useQuery is alias for useSearchParams → both return same result', async () => {

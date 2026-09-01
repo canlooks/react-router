@@ -146,13 +146,13 @@ function renderAtPath(path: string, customRoutes?: RouteItem) {
 
 // ---- Tests ----
 
-describe('Dynamic Route Segments �?Named Params', () => {
+describe('Dynamic Route Segments — Named Params', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
     })
 
-    it("'/users/42' �?UserDetail receives {userId: '42'}", () => {
+    it("'/users/42' → UserDetail receives {userId: '42'}", () => {
         renderAtPath('/users/42')
 
         expect(screen.getByTestId('users-layout')).toBeInTheDocument()
@@ -160,7 +160,7 @@ describe('Dynamic Route Segments �?Named Params', () => {
         expect(screen.getByText('User: 42')).toBeInTheDocument()
     })
 
-    it("'/users/42/posts' �?UserPosts receives {userId: '42'}", () => {
+    it("'/users/42/posts' → UserPosts receives {userId: '42'}", () => {
         renderAtPath('/users/42/posts')
 
         expect(screen.getByTestId('users-layout')).toBeInTheDocument()
@@ -168,7 +168,7 @@ describe('Dynamic Route Segments �?Named Params', () => {
         expect(screen.getByText('Posts for: 42')).toBeInTheDocument()
     })
 
-    it("'/users/42/posts/99' �?PostDetail receives {userId: '42', postId: '99'}", () => {
+    it("'/users/42/posts/99' → PostDetail receives {userId: '42', postId: '99'}", () => {
         renderAtPath('/users/42/posts/99')
 
         expect(screen.getByTestId('users-layout')).toBeInTheDocument()
@@ -184,13 +184,13 @@ describe('Dynamic Route Segments �?Named Params', () => {
     })
 })
 
-describe('Dynamic Route Segments �?Wildcards', () => {
+describe('Dynamic Route Segments — Wildcards', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
     })
 
-    it("'*' wildcard matches single segment: '/docs/readme' �?captures 'readme'", () => {
+    it("'*' wildcard matches single segment: '/docs/readme' → captures 'readme'", () => {
         renderAtPath('/docs/readme')
 
         expect(screen.getByTestId('doc-page')).toBeInTheDocument()
@@ -208,7 +208,7 @@ describe('Dynamic Route Segments �?Wildcards', () => {
         renderAtPath('/docs/a/b')
 
         // Single-segment wildcard * should NOT match 'a/b'
-        // Should fall through to notFound (no notFound provided �?renders nothing)
+        // Should fall through to notFound (no notFound provided — renders nothing)
         expect(screen.queryByTestId('doc-page')).not.toBeInTheDocument()
     })
 
@@ -236,7 +236,7 @@ describe('Dynamic Route Segments �?Wildcards', () => {
     })
 })
 
-describe("Dynamic Route Segments �?'#' Excluded Segment Prefix", () => {
+describe("Dynamic Route Segments — '#' Excluded Segment Prefix", () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
@@ -250,7 +250,7 @@ describe("Dynamic Route Segments �?'#' Excluded Segment Prefix", () => {
         expect(screen.getByTestId('admin-dashboard')).toBeInTheDocument()
     })
 
-    it("URL does NOT include '#admin' prefix �?verify pathname is just '/dashboard'", () => {
+    it("URL does NOT include '#admin' prefix — verify pathname is just '/dashboard'", () => {
         renderAtPath('/dashboard')
 
         // The Router's pathname should be /dashboard
@@ -261,13 +261,13 @@ describe("Dynamic Route Segments �?'#' Excluded Segment Prefix", () => {
     })
 })
 
-describe('Dynamic Route Segments �?Multiple / Duplicate Params', () => {
+describe('Dynamic Route Segments — Multiple / Duplicate Params', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
     })
 
-    it("'/:a/:b' captures both params: '/foo/bar' �?{a: 'foo', b: 'bar'}", () => {
+    it("'/:a/:b' captures both params: '/foo/bar' → {a: 'foo', b: 'bar'}", () => {
         // Use isolated route tree to avoid conflict with :id/:id
         const tree: RouteItem = {
             children: {
@@ -300,7 +300,7 @@ describe('Dynamic Route Segments �?Multiple / Duplicate Params', () => {
         expect(screen.getByText('A: x, B: y')).toBeInTheDocument()
     })
 
-    it("'/:id/:id' at '/user/42' �?params.id is array ['user', '42']", () => {
+    it("'/:id/:id' at '/user/42' → params.id is array ['user', '42']", () => {
         renderAtPath('/user/42')
 
         expect(screen.getByTestId('dup-id-page')).toBeInTheDocument()
@@ -308,7 +308,7 @@ describe('Dynamic Route Segments �?Multiple / Duplicate Params', () => {
         expect(screen.getByText('ID: user, 42')).toBeInTheDocument()
     })
 
-    it("'/:id/:id' at '/abc/xyz' �?params.id is array ['abc', 'xyz']", () => {
+    it("'/:id/:id' at '/abc/xyz' → params.id is array ['abc', 'xyz']", () => {
         renderAtPath('/abc/xyz')
 
         expect(screen.getByTestId('dup-id-page')).toBeInTheDocument()
@@ -316,14 +316,14 @@ describe('Dynamic Route Segments �?Multiple / Duplicate Params', () => {
     })
 })
 
-describe('Dynamic Route Segments �?Combined Scenarios', () => {
+describe('Dynamic Route Segments — Combined Scenarios', () => {
     afterEach(() => {
         cleanup()
         history.pushState(null, '', '/')
     })
 
     it('dynamic params work within nested layouts', () => {
-        // /users/:userId/posts/:postId �?already tested above
+        // /users/:userId/posts/:postId — already tested above
         renderAtPath('/users/100/posts/200')
 
         expect(screen.getByTestId('users-layout')).toBeInTheDocument()
