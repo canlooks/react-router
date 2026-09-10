@@ -1,4 +1,4 @@
-import {Dispatch, RefObject, ReactElement, ReactNode, SetStateAction, ElementType, ComponentPropsWithRef} from 'react'
+import {Context, Dispatch, RefObject, ReactElement, ReactNode, SetStateAction, ElementType, ComponentPropsWithRef} from 'react'
 
 declare namespace Router {
     /**
@@ -75,6 +75,10 @@ declare namespace Router {
 
     function Router(props: RouterProps): ReactElement
 
+    const RouterContext: Context<RouterContext>
+
+    function Routes(props: {entry: RouteItem; notFound?: ReactNode}): ReactNode
+
     function useRouter(): RouterContext
 
     function useSearchParams(): URLSearchParams
@@ -82,7 +86,7 @@ declare namespace Router {
     /** @alias {@link useSearchParams} */
     function useQuery(): URLSearchParams
 
-    function useParams(): Record<string, string>
+    function useParams(): Params
 
     /**
      * ---------------------------------------------------------------
@@ -90,6 +94,10 @@ declare namespace Router {
      */
 
     function useRouteStack<T extends RouteItem = RouteItem>(): T[]
+
+    const RouteStack: Context<RouteItem[]>
+
+    const RouteLayoutStackIndex: Context<number>
 
     function useRouteLayoutStack<T extends RouteItem = RouteItem>(): T[]
 
@@ -201,6 +209,8 @@ declare namespace Router {
      * @param path
      */
     function dropLastPortion(path: string): string
+
+    function isStartWithProtocol(path: string): boolean
 
     /**
      * 拼接路径

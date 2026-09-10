@@ -1,0 +1,12 @@
+:root { font-family: system-ui, sans-serif; color: #202938; background: #f4f6f8; line-height: 1.6; }
+body { margin: 0 auto; max-width: 1100px; padding: 24px; }
+h1 { font-size: 26px; } h2 { font-size: 20px; }
+.panel { background: white; border: 1px solid #d3dbe5; border-radius: 8px; padding: 18px; margin: 16px 0; }
+nav, .actions, form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+label { display: inline-flex; flex-direction: column; gap: 4px; }
+label:has([type="checkbox"]) { flex-direction: row; }
+input, select, button { font: inherit; padding: 7px 10px; border: 1px solid #aebbc9; border-radius: 4px; }
+button { cursor: pointer; background: #eef3fb; color: #1c4276; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #2875cf; outline-offset: 3px; }
+a { color: #135ba7; } pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #f1f4f8; padding: 12px; }
+[role="alert"] { color: #aa1624; } .actions { margin-top: 12px; } .long-page { height: 1300px; padding-top: 40px; }

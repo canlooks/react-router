@@ -115,14 +115,14 @@ export function unifyPath(path: string) {
  * @param path
  */
 function dropSearchAndHash(path: string) {
-    const drop = (path: string, symbol: '$' | '#') => {
+    const drop = (path: string, symbol: '?' | '#') => {
         const index = path.indexOf(symbol)
         if (index > -1) {
             return path.slice(0, index)
         }
         return path
     }
-    path = drop(path, '$')
+    path = drop(path, '?')
     return drop(path, '#')
 }
 
@@ -152,6 +152,10 @@ export function joinPath(...paths: string[]) {
     }
     if (paths.length === 1) {
         let [path] = paths
+        if (isStartWithProtocol(path)) {
+            const [, authority, pathname, suffix] = path.match(/^([a-zA-Z]+:\/\/[^/?#]*)([^?#]*)(.*)$/)!
+            return authority + dropEndSlash(unifySlash(pathname)) + suffix
+        }
         path = unifySlash(path)
         return dropEndSlash(path)
     }
@@ -201,18 +205,19 @@ export function resolvePath(to: To, fromPath?: string | null) {
     if (isStartWithProtocol(to)) {
         return to
     }
-    to = unifySlash(to)
-    if (fromPath) {
-        fromPath = dropSearchAndHash(fromPath)
+    const normalize = (path: string) => {
+        const index = path.search(/[?#]/)
+        return index < 0 ? unifySlash(path) : unifySlash(path.slice(0, index)) + path.slice(index)
     }
-    const [l] = to
-    if (!fromPath || l === '/') {
+    to = normalize(to)
+    if (!fromPath) {
         return to
     }
-    if (l !== '?' && l !== '#') {
-        fromPath = dropLastPortion(fromPath)
-    }
-    return joinPath(fromPath, to)
+    const origin = 'https://router.invalid/'
+    const fromURL = new URL(isStartWithProtocol(fromPath) ? fromPath : normalize(fromPath), origin)
+    // Non-:// colon segments remain ordinary paths under the existing protocol contract.
+    const destination = new URL(/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(to) ? './' + to : to, fromURL)
+    return destination.pathname + destination.search + destination.hash
 }
 
 /**
@@ -223,18 +228,24 @@ export function resolvePath(to: To, fromPath?: string | null) {
  * @returns {null} 如果路径不匹配，返回null
  */
 export function truncatePath(pathname: string, scissor: string | RegExp | undefined): string | null {
-    if (scissor instanceof RegExp) {
-        scissor = scissor.source.replace(/^\^?/, '').replace(/\$?$/, '')
-    }
     pathname = unifyPath(pathname)
+    if (scissor instanceof RegExp) {
+        let source = scissor.source.replace(/^\^/, '')
+        // An escaped dollar is literal; an even number of preceding slashes leaves an anchor.
+        if (/(^|[^\\])(\\\\)*\$$/.test(source)) {
+            source = source.slice(0, -1)
+        }
+        const match = new RegExp(`^(?:${source})(?=/|$)`, scissor.flags).exec(pathname)
+        return match?.index === 0 ? pathname.slice(match[0].length).replace(/^\//, '') : null
+    }
     scissor = unifyPath(scissor || '')
     if (!scissor) {
         return pathname
     }
-    if (!RegExp(`^${scissor}(/[^/]+)*$`).test(pathname)) {
+    if (pathname !== scissor && !pathname.startsWith(scissor + '/')) {
         return null
     }
-    return pathname.replace(RegExp(`^${scissor}/?`), '')
+    return pathname.slice(scissor.length).replace(/^\//, '')
 }
 
 /**
@@ -244,20 +255,19 @@ export function truncatePath(pathname: string, scissor: string | RegExp | undefi
  * @returns {Record<string, string>} 返回匹配的参数
  * @returns {null} 如果路径不匹配，返回null
  */
-const doubleAsteriskReplacement = '_DOUBLE_ASTERISK_REPLACEMENT_'
-
 export function matchPath(pathname: string, routePath: string) {
     const paramNames: string[] = []
-    let pattern = routePath
-        .replace(/\*\*+/, () => {
-            return doubleAsteriskReplacement
-        })
-        .replace(/(:[^/]+)|\*/g, $1 => {
-            paramNames.push($1 === '*' ? $1 : $1.slice(1))
-            return '([^/]+)'
-        })
-        // 需要将**前方的/一同匹配，以防/path**的写法
-        .replace(new RegExp('/' + doubleAsteriskReplacement, 'g'), '/?.*')
+    const pattern = routePath.split('/').map((segment, index) => {
+        const slash = index ? '/' : ''
+        if (segment === '**') {
+            return index ? '(?:/.*)?' : '.*'
+        }
+        if (segment.startsWith(':') || segment === '*') {
+            paramNames.push(segment === '*' ? segment : segment.slice(1))
+            return slash + '([^/]+)'
+        }
+        return slash + segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    }).join('')
 
     const match = pathname.match(new RegExp(`^${pattern}$`))
     if (!match) {
@@ -267,9 +277,11 @@ export function matchPath(pathname: string, routePath: string) {
     const params: Params = {}
     paramNames.forEach((name, i) => {
         const value = match[i + 1]
-        if (typeof params[name] === 'string') {
-            params[name] = [params[name]]
-            params[name].push(value)
+        const previous = params[name]
+        if (Array.isArray(previous)) {
+            previous.push(value)
+        } else if (typeof previous === 'string') {
+            params[name] = [previous, value]
         } else {
             params[name] = value
         }

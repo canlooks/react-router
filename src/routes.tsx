@@ -35,12 +35,12 @@ export const Routes = memo(({entry, notFound}: {
                 const child = children[path]
                 const [p] = path
                 parentMap.set(child, route)
-                isDynamic ||= p === ':' || path === '*' || path === '**'
+                const childIsDynamic = isDynamic || p === ':' || path === '*' || path === '**'
 
                 recurse(
                     child,
                     p === '#' ? paths : [...paths, path],
-                    isDynamic
+                    childIsDynamic
                 )
             }
         }
@@ -50,6 +50,9 @@ export const Routes = memo(({entry, notFound}: {
     }, [entry])
 
     const routeStack = useMemo(() => {
+        for (const key of Object.keys(params)) {
+            delete params[key]
+        }
         if (pathname === null) {
             return
         }

@@ -1,10 +1,10 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "noUnusedLocals": false
+    "rootDir": "..",
+    "noEmit": true,
+    "types": ["node", "vitest/globals", "@testing-library/jest-dom/vitest"],
+    "skipLibCheck": false
   },
-  "include": [
-    "**/*"
-  ]
+  "include": ["../src/**/*", "../index.d.ts", "./**/*.ts", "./**/*.tsx", "./**/*.mts"]
 }

@@ -37,26 +37,32 @@
     "build": "tsc -m esnext --outDir dist/esm & tsc -m commonjs --outDir dist/cjs",
     "build:alias": "tsc-alias --outDir dist/esm",
     "rebuild": "npm run clean && npm run build && npm run build:alias",
-    "test": "vitest run -c test/vitest.config.ts",
-    "test:node": "npx ts-node test/node.ts",
-    "test:browser": "vite -c test/vite.config.mts"
+    "test": "node test/run.mjs all",
+    "test:baseline": "node test/run.mjs baseline",
+    "test:regressions": "node test/run.mjs regressions",
+    "test:coverage": "node test/run.mjs coverage",
+    "test:watch": "node test/run.mjs watch",
+    "test:types": "tsc --noEmit -p test/tsconfig.json",
+    "test:browser": "vite --config test/browser/vite.config.mts",
+    "test:catalog": "node test/generate-catalog.mjs"
   },
   "dependencies": {
     "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "jsdom": "^29.1.1",
+    "@vitest/coverage-v8": "4.1.6",
+    "jsdom": "29.1.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "tsc-alias": "^1.8.16",
     "typescript": "^6.0.3",
     "vite": "^8.0.8",
-    "vitest": "^4.1.6"
+    "vitest": "4.1.6"
   }
 }
