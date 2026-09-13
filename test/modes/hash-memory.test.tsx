@@ -98,6 +98,31 @@ describe('M-HASH hash routing', () => {
         app.unmount()
         expect(remove).toHaveBeenCalledWith('hashchange', handler)
     })
+    it('M-HASH-13 native traversal updates URL/page/params without rewriting host state', async () => {
+        history.replaceState({outer: true}, '', '/host?outer=1#/')
+        const app = mountRouter({mode: 'hash'})
+        act(() => app.router.navigate('/about', {state: {step: 1}}))
+        await waitFor(() => expect(app.router.pathname).toBe('/about'))
+        act(() => app.router.navigate('/users/42', {state: {step: 2}}))
+        await waitFor(() => expect(app.router.pathname).toBe('/users/42'))
+        const hashEntryNativeState = history.state
+
+        act(() => history.back())
+        await waitFor(() => expect(app.router.pathname).toBe('/about'))
+        expect(location.pathname + location.search).toBe('/host?outer=1')
+        expect(location.hash).toBe('#/about')
+        expect(app.router.location.pathname).toBe('/about')
+        expect(app.router.params).toEqual({})
+        expect(screen.getByRole('heading')).toHaveTextContent('About')
+        expect(history.state).toBe(hashEntryNativeState)
+
+        act(() => history.forward())
+        await waitFor(() => expect(app.router.pathname).toBe('/users/42'))
+        expect(location.hash).toBe('#/users/42')
+        expect(app.router.params).toEqual({id: '42'})
+        expect(screen.getByRole('heading')).toHaveTextContent('User')
+        expect(history.state).toBe(hashEntryNativeState)
+    })
 })
 
 describe('M-MEMORY memory mode baseline', () => {

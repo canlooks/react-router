@@ -107,7 +107,7 @@ declare namespace Router {
 
     function useOutlet(): ReactElement | null
 
-    function Outlet(): ReactElement
+    function Outlet(): ReactElement | null
 
 
     /**
@@ -122,7 +122,7 @@ declare namespace Router {
         delta?: number
     }
 
-    function Navigate(props: NavigateProps): ReactElement
+    function Navigate(props: NavigateProps): null
 
     type RedirectProps = Omit<NavigateProps, 'replace'>
 

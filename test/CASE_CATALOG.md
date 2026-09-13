@@ -1,8 +1,8 @@
 # 自动化用例清单与执行快照
 
-执行时间（UTC）：2026-09-10T05:35:29.461Z；源码基准提交：`4fff00c`；包含工作区未提交的修复。
+执行时间（UTC）：2026-09-12T13:42:42.250Z；源码基准提交：`9853df7`；包含工作区未提交的修复。
 
-共 15 个文件、343 个用例；通过 343，失败 0，其他状态 0。
+共 17 个文件、403 个用例；通过 403，失败 0，其他状态 0。
 
 这是最近一次全量执行的快照，不能代替后续复测。失败为普通断言失败，绝非预期失败反转。
 
@@ -126,6 +126,7 @@
 | M-HASH hash routing M-HASH-10 stores state in context and leaves native state/scrollRestoration alone | 通过 |
 | M-HASH hash routing M-HASH-11 rejects cross-origin URL objects before changing the hash | 通过 |
 | M-HASH hash routing M-HASH-12 removes hashchange subscription on unmount | 通过 |
+| M-HASH hash routing M-HASH-13 native traversal updates URL/page/params without rewriting host state | 通过 |
 | M-MEMORY memory mode baseline M-MEMORY-01 starts with a root page when the browser hash is empty | 通过 |
 | M-MEMORY memory mode baseline M-MEMORY-02 navigation does not modify browser URL, native history or scrollRestoration | 通过 |
 | M-MEMORY memory mode baseline M-MEMORY-03 setState accepts object and functional updates | 通过 |
@@ -158,6 +159,7 @@
 | M-HISTORY browser history routing M-HISTORY-13 same-URL navigation still updates state | 通过 |
 | M-HISTORY browser history routing M-HISTORY-14 adds and removes the exact popstate listener on unmount | 通过 |
 | M-HISTORY browser history routing M-HISTORY-15 an unchanged popstate event does not schedule a context update | 通过 |
+| M-HISTORY browser history routing M-HISTORY-16 MAN-03 complete push/replace/native traversal keeps the replacement entry | 通过 |
 
 ## regressions/declarations.test.ts
 
@@ -167,6 +169,7 @@
 | --- | --- |
 | D-23 useParams declaration accepts the repeated-parameter arrays returned at runtime | 通过 |
 | D-24 public declarations expose every runtime export | 通过 |
+| X-TYPE-02 Outlet and Navigate declarations match their nullable runtime results | 通过 |
 
 ## regressions/link-contracts.test.tsx
 
@@ -249,6 +252,77 @@
 | Known defects: path contracts D-14 catch-all keeps a full segment boundary with empty and nested remainders | 通过 |
 | Known defects: path contracts D-15 two through four id captures accumulate without sharing arrays | 通过 |
 | Known defects: path contracts D-15 two through four * captures accumulate without sharing arrays | 通过 |
+
+## regressions/report-20260910-path.test.ts
+
+[查看测试代码](regressions/report-20260910-path.test.ts)
+
+| 用例（完整执行名称） | 结果 |
+| --- | --- |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["https://router.test/a","b"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["https://router.test/a","../b"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a",".well-known"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a","..hidden"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a","b?q=/x//y"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a?q=/x//y"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a","./b"]) preserves path literals and URL structure | 通过 |
+| X-JOIN public utility boundaries X-JOIN-01 joinPath(["/a/b","../c"]) preserves path literals and URL structure | 通过 |
+| X-PARAM legal parameter names X-PARAM-01 named parameter __proto__ is an own property | 通过 |
+| X-PARAM legal parameter names X-PARAM-01 named parameter constructor is an own property | 通过 |
+| X-PARAM legal parameter names X-PARAM-01 named parameter toString is an own property | 通过 |
+| X-PARAM legal parameter names X-PARAM-01 named parameter id is an own property | 通过 |
+| X-PARAM legal parameter names X-PARAM-02 repeated __proto__ parameters form an own array | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a","b#part//"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a","b?next=https://h/a//b#part//"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["https://user:pass@router.test:8443/a","b"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a/b/c","../../d"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a","?q=1"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a","#part"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a","../b"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries preserves structure for ["/a",".../b"] | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries normalizes only the pathname of a complete URL | 通过 |
+| X-JOIN-02 additional authority and suffix boundaries keeps root and empty distinctions | 通过 |
+
+## regressions/report-20260910-router.test.tsx
+
+[查看测试代码](regressions/report-20260910-router.test.tsx)
+
+| 用例（完整执行名称） | 结果 |
+| --- | --- |
+| X-NAV retained declarative navigation X-NAV-01 unchanged Navigate props must not navigate on unrelated rerender | 通过 |
+| X-NAV retained declarative navigation X-NAV-02 history retained layout Navigate must settle after one navigation | 通过 |
+| X-NAV retained declarative navigation X-NAV-02 hash retained layout Navigate must settle after one navigation | 通过 |
+| X-NAV retained declarative navigation X-NAV-02 memory retained layout Navigate must settle after one navigation | 通过 |
+| X-NEST parent to mounted child synchronization X-NEST-01 history parent push must refresh an existing child | 通过 |
+| X-NEST parent to mounted child synchronization X-NEST-01 hash parent push must refresh an existing child | 通过 |
+| X-NEST parent to mounted child synchronization X-NEST-02 history parent replace must refresh an existing child | 通过 |
+| X-NEST parent to mounted child synchronization X-NEST-02 hash parent replace must refresh an existing child | 通过 |
+| X-NEST parent to mounted child synchronization X-NEST-03 history parent setState must update child state on the same native entry | 通过 |
+| X-ENC history URL encoding end to end X-ENC-01 raw static route segment 中文 is reachable by encoded URL | 通过 |
+| X-ENC history URL encoding end to end X-ENC-01 raw static route segment café is reachable by encoded URL | 通过 |
+| X-ENC history URL encoding end to end X-ENC-01 raw static route segment a b is reachable by encoded URL | 通过 |
+| X-ENC history URL encoding end to end X-ENC-02 base /应用 matches its own navigation URL | 通过 |
+| X-ENC history URL encoding end to end X-ENC-02 base /my app matches its own navigation URL | 通过 |
+| X-ENC history URL encoding end to end X-ENC-03 explicitly encoded route key works as a control | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-01 raw static route segment 中文 is reachable by encoded URL | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-01 raw static route segment café is reachable by encoded URL | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-01 raw static route segment a b is reachable by encoded URL | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-02 base /应用 matches its own navigation URL | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-02 base /my app matches its own navigation URL | 通过 |
+| X-ENC hash URL encoding end to end X-ENC-03 explicitly encoded route key works as a control | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-01 raw static route segment 中文 is reachable by encoded URL | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-01 raw static route segment café is reachable by encoded URL | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-01 raw static route segment a b is reachable by encoded URL | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-02 base /应用 matches its own navigation URL | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-02 base /my app matches its own navigation URL | 通过 |
+| X-ENC memory URL encoding end to end X-ENC-03 explicitly encoded route key works as a control | 通过 |
+| X-TYPE public hook result contract X-TYPE-01 leaf useOutlet must return null when it has no child, per index.d.ts | 通过 |
+| X-COMBINATION cross-cutting router boundaries a persistent Navigate follows declaration changes without following its own location | 通过 |
+| X-COMBINATION cross-cutting router boundaries a URL object with an unchanged href does not repeat a declaration | 通过 |
+| X-COMBINATION cross-cutting router boundaries copies encoded static descendants below a dynamic route and preserves captures | 通过 |
+| X-COMBINATION cross-cutting router boundaries copies an encoded static ancestor into a dynamic descendant path | 通过 |
+| X-COMBINATION cross-cutting router boundaries retains a special parameter through Router matching and clears it on a static route | 通过 |
+| X-COMBINATION cross-cutting router boundaries keeps a child Router instance mounted while a browser parent changes location | 通过 |
 
 ## regressions/router-contracts.test.tsx
 

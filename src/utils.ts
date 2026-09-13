@@ -151,46 +151,89 @@ export function joinPath(...paths: string[]) {
         return ''
     }
     if (paths.length === 1) {
-        let [path] = paths
-        if (isStartWithProtocol(path)) {
-            const [, authority, pathname, suffix] = path.match(/^([a-zA-Z]+:\/\/[^/?#]*)([^?#]*)(.*)$/)!
-            return authority + dropEndSlash(unifySlash(pathname)) + suffix
-        }
-        path = unifySlash(path)
-        return dropEndSlash(path)
+        return formatSinglePathParts(splitPathParts(paths[0]))
     }
-    const fn = (prev: string, next: string) => {
+    const fn = (prev: string, next: string): string => {
         if (isStartWithProtocol(next)) {
             return next
         }
-        prev = unifySlash(prev)
-        prev = dropSearchAndHash(prev)
-        next = unifySlash(next)
-        if (!prev) {
-            return next
+        const previous = splitPathParts(prev)
+        const following = splitPathParts(next)
+        const previousPath = normalizeJoinPathname(previous.pathname)
+        const followingPath = normalizeJoinPathname(following.pathname)
+
+        if (!previous.authority && !previousPath) {
+            return formatPathParts(following, true)
         }
         if (!next) {
-            return prev
+            return formatPathParts({...previous, suffix: ''}, true)
         }
-        const [l] = next
-        // 特殊开头，开启新路径
-        if (l === '/') {
-            return next
+        if (followingPath.startsWith('/')) {
+            return formatPathParts(following, true)
         }
-        // ".."或"../"开头，去掉prev的前一段后递归
-        if (next.startsWith('..')) {
+        if (/^\.\.(?:\/|$)/.test(followingPath)) {
+            const remainder = followingPath.slice(2).replace(/^\/+/, '')
+            const parent = removeLastJoinPathname(previousPath)
             return fn(
-                dropLastPortion(prev),
-                next.replace(/^\.\.\/?/, '')
+                formatPathParts({...previous, pathname: parent, suffix: ''}, false),
+                remainder + following.suffix
             )
         }
-        // "."或"./"开头，直接递归
-        if (l === '.') {
-            return fn(prev, next.replace(/^\.\/?/, ''))
+        if (/^\.(?:\/|$)/.test(followingPath)) {
+            const remainder = followingPath.slice(1).replace(/^\/+/, '')
+            return fn(
+                formatPathParts({...previous, pathname: previousPath, suffix: ''}, false),
+                remainder + following.suffix
+            )
         }
-        return `${dropEndSlash(prev)}/${dropEndSlash(next)}`
+
+        const prefix = previous.authority + previousPath
+        const joinedPath = followingPath
+            ? prefix === '/' ? '/' + followingPath : prefix ? `${dropEndSlash(prefix)}/${followingPath}` : followingPath
+            : prefix === '/' ? '/' : `${dropEndSlash(prefix)}/`
+        return joinedPath + following.suffix
     }
     return paths.reduce(fn)
+}
+
+type PathParts = {authority: string; pathname: string; suffix: string}
+
+function splitPathParts(path: string): PathParts {
+    if (isStartWithProtocol(path)) {
+        const [, authority, pathname, suffix] = path.match(/^([a-zA-Z]+:\/\/[^/?#]*)([^?#]*)(.*)$/)!
+        return {authority, pathname, suffix}
+    }
+    const index = path.search(/[?#]/)
+    return index < 0
+        ? {authority: '', pathname: path, suffix: ''}
+        : {authority: '', pathname: path.slice(0, index), suffix: path.slice(index)}
+}
+
+function normalizeJoinPathname(pathname: string) {
+    const normalized = unifySlash(pathname)
+    return normalized === '/' ? '/' : dropEndSlash(normalized)
+}
+
+function formatPathParts(parts: PathParts, trim: boolean) {
+    const pathname = unifySlash(parts.pathname)
+    const normalized = trim
+        ? pathname === '/' ? '/' : dropEndSlash(pathname)
+        : pathname
+    return parts.authority + normalized + parts.suffix
+}
+
+function formatSinglePathParts(parts: PathParts) {
+    const pathname = unifySlash(parts.pathname)
+    const normalized = pathname === '/' ? '' : dropEndSlash(pathname)
+    return parts.authority + normalized + parts.suffix
+}
+
+function removeLastJoinPathname(pathname: string) {
+    if (!pathname || pathname === '/') return pathname
+    const normalized = normalizeJoinPathname(pathname)
+    const index = normalized.lastIndexOf('/')
+    if (index < 0) return ''
+    return index === 0 ? '/' : normalized.slice(0, index)
 }
 
 /**
@@ -277,13 +320,17 @@ export function matchPath(pathname: string, routePath: string) {
     const params: Params = {}
     paramNames.forEach((name, i) => {
         const value = match[i + 1]
-        const previous = params[name]
+        const previous = Object.hasOwn(params, name) ? params[name] : undefined
         if (Array.isArray(previous)) {
             previous.push(value)
         } else if (typeof previous === 'string') {
-            params[name] = [previous, value]
+            Object.defineProperty(params, name, {
+                value: [previous, value], enumerable: true, writable: true, configurable: true
+            })
         } else {
-            params[name] = value
+            Object.defineProperty(params, name, {
+                value, enumerable: true, writable: true, configurable: true
+            })
         }
     })
     return params

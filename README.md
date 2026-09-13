@@ -173,7 +173,7 @@ Memory routers start at an independent root, including during server rendering. 
 
 History state is initialized from `history.state` and restored on native back/forward, even when two entries have the same URL. Hash and memory store state on local history entries. Their `navigate(delta)`, `back()` and `forward()` restore both URL and state; `replace()` only changes the current entry, preserving earlier and forward entries. A push after going back discards the forward branch. Navigation without a state option starts with `null`.
 
-Hash navigation uses a local history stack for Router methods. Native browser back/forward updates the hash and rendered page, but does not restore local state by native entry or synchronize the local stack cursor. Reloading starts a new hash stack with `null` state. Hash `setState()` keeps business state local; hash replace preserves the host's native state and outer pathname/query without adding a native entry.
+Hash navigation uses a local history stack for Router methods. Native browser back/forward updates the hash, route URL, rendered page and params, but does not restore local state by native entry or synchronize the local stack cursor. This is the current X-HASH-01 boundary: use `router.back()` / `router.forward()` when hash business state must be restored. Reloading starts a new hash stack with `null` state. Hash `setState()` keeps business state local; hash replace preserves the host's native state and outer pathname/query without adding a native entry.
 
 Changing `mode` updates its event subscriptions and selects the new mode's location/state source. Re-entering memory starts at its root; entering hash starts a new local history at the current browser hash. History is not migrated between modes.
 
@@ -224,6 +224,16 @@ Imperative navigation that triggers on render.
 <Navigate delta={-1} />
 ```
 
+`Navigate` executes once for each effective declaration. Re-rendering a mounted
+component because the router context changed does not repeat the same
+navigation. A new target declaration, mode or base, or navigation option starts
+a new declaration; numeric `delta` compares its value and mode only and takes
+precedence over `to`. Keep an object passed
+as `state` referentially stable while a declaration remains mounted when the
+same navigation should be retained. A failed navigation is not recorded as
+completed and its error is still propagated. The component renders no DOM and
+its strict TypeScript return type is `null`.
+
 #### `<Redirect>`
 
 Shorthand for `<Navigate replace />`.
@@ -249,6 +259,10 @@ function AppLayout() {
     )
 }
 ```
+
+`useOutlet()` and `Outlet()` return `null` at a leaf with no further outlet.
+They return an element when a child layout or page is available, so nullable
+handling is required in strict TypeScript consumers.
 
 ### Hooks
 
@@ -353,6 +367,17 @@ const resolvedPath = useResolvePath('../settings')
 ### Nested Routers
 
 You can nest `<Router>` components. A child `Router` can detect and call the parent's update method to keep nested routing in sync.
+
+When parent and child routers use the same browser mode, a parent location or
+history state update refreshes an already mounted child from that mode's native
+location. The child keeps its own base and context; synchronization does not
+write another history entry or recreate the child. Memory routers remain
+isolated from browser routers and from other memory instances.
+
+Static route keys containing Unicode characters or spaces are matched against
+their URL encoded form (for example, `中文` matches `%E4%B8%AD%E6%96%87`). The
+same encoding rule applies to a Unicode or space-containing `base`; the public
+`base` value remains the configured text while matching uses its URL form.
 
 `Routes`, `RouterContext`, `RouteStack`, `RouteLayoutStackIndex` and `isStartWithProtocol` are also available from the package entry with TypeScript declarations. `Routes` accepts `entry` and optional `notFound` inside an existing router context; the Context exports support ordinary React Provider and `useContext` usage.
 

@@ -60,6 +60,8 @@ export function useOutlet() {
             </RouteLayoutStackIndex>
         )
     }
+
+    return null
 }
 
 export function Outlet() {

@@ -1,5 +1,7 @@
 import {act, screen, waitFor} from '@testing-library/react'
+import {useState} from 'react'
 import {describe, expect, it, vi} from 'vitest'
+import {Outlet} from '../../src'
 import {mountRouter, receivePopstate} from '../helpers/router'
 
 describe('M-HISTORY browser history routing', () => {
@@ -125,5 +127,62 @@ describe('M-HISTORY browser history routing', () => {
         const original = app.router
         act(() => dispatchEvent(new PopStateEvent('popstate')))
         expect(app.router).toBe(original)
+    })
+    it('M-HISTORY-16 MAN-03 complete push/replace/native traversal keeps the replacement entry', async () => {
+        let layoutInstances = 0
+        function Layout() {
+            const [instance] = useState(() => ++layoutInstances)
+            return <section data-testid="history-layout"><output data-testid="layout-instance">{instance}</output><Outlet/></section>
+        }
+        history.replaceState({page: 'home'}, '', '/')
+        const app = mountRouter({entry: {
+            layout: <Layout/>, page: <h1>Home</h1>, children: {
+                about: {page: <h1>About</h1>}, users: {children: {':id': {page: <h1>User</h1>}}}
+            }
+        }})
+        const initialLength = history.length
+        const layoutInstance = screen.getByTestId('layout-instance').textContent
+
+        act(() => app.router.navigate('/about', {state: {page: 'about'}}))
+        act(() => app.router.navigate('/users/42', {state: {page: 'user-42'}}))
+        const beforeReplace = history.length
+        act(() => app.router.replace('/users/43', {state: {page: 'user-43'}}))
+
+        expect(history.length).toBe(beforeReplace)
+        expect(history.length).toBe(initialLength + 2)
+        expect(location.pathname).toBe('/users/43')
+        expect(app.router.location.pathname + app.router.location.search + app.router.location.hash).toBe('/users/43')
+        expect(app.router.params).toEqual({id: '43'})
+        expect(app.router.state).toEqual({page: 'user-43'})
+        expect(history.state).toEqual({page: 'user-43'})
+        expect(screen.getByRole('heading')).toHaveTextContent('User')
+        expect(screen.getByTestId('layout-instance')).toHaveTextContent(layoutInstance!)
+
+        act(() => history.back())
+        await waitFor(() => expect(app.router.pathname).toBe('/about'))
+        expect(location.pathname).toBe('/about')
+        expect(app.router.location.pathname + app.router.location.search + app.router.location.hash).toBe('/about')
+        expect(app.router.params).toEqual({})
+        expect(app.router.state).toEqual({page: 'about'})
+        expect(history.state).toEqual({page: 'about'})
+        expect(screen.getByRole('heading')).toHaveTextContent('About')
+        expect(screen.getByTestId('layout-instance')).toHaveTextContent(layoutInstance!)
+
+        act(() => history.forward())
+        await waitFor(() => expect(app.router.pathname).toBe('/users/43'))
+        expect(location.pathname).toBe('/users/43')
+        expect(app.router.location.pathname + app.router.location.search + app.router.location.hash).toBe('/users/43')
+        expect(app.router.params).toEqual({id: '43'})
+        expect(app.router.state).toEqual({page: 'user-43'})
+        expect(history.state).toEqual({page: 'user-43'})
+        expect(screen.getByTestId('layout-instance')).toHaveTextContent(layoutInstance!)
+
+        act(() => app.router.back())
+        await waitFor(() => expect(app.router.pathname).toBe('/about'))
+        expect(app.router.state).toEqual({page: 'about'})
+        act(() => app.router.forward())
+        await waitFor(() => expect(app.router.pathname).toBe('/users/43'))
+        expect(app.router.state).toEqual({page: 'user-43'})
+        expect(history.length).toBe(initialLength + 2)
     })
 })

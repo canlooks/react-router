@@ -2,6 +2,7 @@ import {createContext, memo, useContext, useEffect, useMemo, useRef, useState} f
 import {NavigateOptions, Params, RouterContext as IRouterContext, RouterProps, To} from '..'
 import {cloneLocation, isLocationChanged, isStartWithProtocol, joinPath, resolvePath, truncatePath, unifyPath, useSync, useSyncState} from './utils'
 import {Routes} from './routes'
+import {encodePathText} from './path-encoding'
 
 export const RouterContext = createContext({} as IRouterContext)
 
@@ -71,6 +72,14 @@ export const Router = memo(({
         return () => removeEventListener(event, handler)
     }, [mode])
 
+    // A mounted child has no native event of its own when a parent Router
+    // writes the shared browser location. Refresh its snapshot from the
+    // current mode without writing history or notifying the parent again.
+    useEffect(() => {
+        if (mode === 'memory' || !parentRouter.location || parentRouter.mode === 'memory') return
+        latestLocationChange.current()
+    }, [mode, parentRouter])
+
     const getLocationInMode = () => mode === 'history'
         ? clonedLocation.current!
         : mode === 'hash'
@@ -99,10 +108,14 @@ export const Router = memo(({
     const params = useRef<Params>({})
 
     // 截断base后的pathname
+    // Browser URL pathname is percent-encoded; keep the public base untouched
+    // and use its encoded form only for the matching boundary.
+    const matchingBase = useMemo(() => encodePathText(base), [base])
+
     const pathname = useMemo(() => {
-        const truncated = truncatePath(locationInMode.pathname, base)
+        const truncated = truncatePath(locationInMode.pathname, matchingBase)
         return truncated === null ? null : joinPath('/', truncated)
-    }, [locationInMode.pathname, base])
+    }, [locationInMode.pathname, matchingBase])
 
     /**
      * ------------------------------------------------------------------

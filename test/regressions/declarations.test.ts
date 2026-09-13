@@ -23,3 +23,7 @@ it('D-23 useParams declaration accepts the repeated-parameter arrays returned at
 it('D-24 public declarations expose every runtime export', () => {
     expect(diagnosticsFor('exports.tsx')).toEqual([])
 }, 15_000)
+
+it('X-TYPE-02 Outlet and Navigate declarations match their nullable runtime results', () => {
+    expect(diagnosticsFor('outlet.tsx')).toEqual([])
+}, 15_000)

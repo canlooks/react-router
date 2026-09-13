@@ -2,16 +2,16 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 被测版本 | `@canlooks/react-router` 2.0.9；源码基准 `4fff00c` 加本轮工作区修复 |
-| 文档版本 / 日期 | 1.1 / 2026-09-10 |
+| 被测版本 | `@canlooks/react-router` 2.0.9；源码基准 `9853df7` 加 BUG-01～BUG-07 修复 |
+| 文档版本 / 日期 | 1.3 / 2026-09-12 |
 | 使用对象 | 测试执行人员、开发人员、发布负责人 |
 | 依据 | [README](../README.md)、[公开类型声明](../index.d.ts)、[源码](../src/index.ts) |
-| 本次交付 | D-01～D-24 修复、66 项补充回归、公开声明、README、测试台及测试文档更新 |
-| 当前结论 | **24 类既有自动化缺陷已修复；343 / 343 用例通过，类型与覆盖率门禁通过。完整产品发布验收仍未完成，见第 6、8 节。** |
+| 本次交付 | D-01～D-24 既有修复基础上新增 BUG-01～BUG-07 修复、41 项有效回归、公开声明、README 与测试文档更新 |
+| 当前结论 | **BUG-01～BUG-07 的 41 项有效回归、组合邻接断言与原有 343 项均通过；新增 MAN-03 history 序列和 hash 原生 traversal 可承诺部分断言后，全量为 403 项，类型与覆盖率门禁通过。X-HASH-01 及完整产品发布验收仍按边界保留，见第 6、8、9 节。** |
 
-本轮按 [修复计划](reports/20260910-123716/FIX_PLAN.md) 实施，修改 `utils.ts`、`routes.tsx`、`router.tsx`、`link.tsx` 和 `index.d.ts`。保留原 277 项业务断言；原 232 项通过基线和 45 项缺陷用例全部通过，另增加 66 项。未使用 `skip`、`todo`、`it.fails`、降低覆盖率门限或扩宽声明来关闭缺陷。保留已有测试重整及 package/lockfile 变更，本轮没有升级依赖或更改包版本。
+本轮按 [X-HASH-01 修复计划](reports/20260912-175014/FIX_PLAN.md) 实施，新增修改 `navigate.tsx`、`path-encoding.ts`、`utils.ts`、`routes.tsx`、`router.tsx`、`outlet.tsx`、`index.d.ts`。保留原有 343 项断言；迁入 BUG-01～BUG-07 的 41 项有效扩展回归，另增加 16 项组合邻接断言、1 项 nullable 类型编译检查，以及 2 项 MAN-03/X-HASH-01 边界测试。未使用 `skip`、`todo`、`it.fails`、降低覆盖率门限或扩宽声明来关闭缺陷。保留已有测试重整及 package/lockfile 变更，本轮没有升级依赖或更改包版本。
 
-修复说明及逐项结果见 [FIX_REPORT.md](FIX_REPORT.md)；本轮原始证据归档于 [20260910-132525-fixed](reports/20260910-132525-fixed/RESULTS.md)，修复前报告仍保留在原目录。本文中明确标为“此前”或“修复前”的失败记录是历史证据。
+修复说明及逐项结果见 [FIX_REPORT.md](FIX_REPORT.md)；BUG-01～BUG-07 的结果见 [本轮修复报告](reports/20260910-135202/FIX_REPORT.md)。既有修复证据与修复前报告仍保留在各自目录。本文中明确标为“此前”或“修复前”的失败记录是历史证据。
 
 ## 1. 项目用途与测试目标
 
@@ -23,18 +23,18 @@
 
 | 需求 | 功能 / 验证范围 | 自动化用例前缀 | 对应源码 |
 | --- | --- | --- | --- |
-| R01 | 路径规范化、拼接、相对路径、base 截断、URL 对象 | U-PATH、U-JOIN、U-RESOLVE、U-BASE、D-10～D-12、D-16～D-17 | `src/utils.ts`、`src/link.tsx`、`src/router.tsx` |
-| R02 | 静态、命名参数、重复参数、`*`、`**`、精确边界 | U-MATCH、C-ROUTES、D-08、D-13～D-15 | `src/utils.ts`、`src/routes.tsx` |
-| R03 | 分组、嵌套布局、叶子页面、空值、404、动态替换 entry | C-ROUTES、C-OUTLET、D-09 | `src/routes.tsx`、`src/outlet.tsx` |
-| R04 | history 的 push / replace / delta / back / forward / base / 事件 | M-HISTORY、D-06～D-07、D-17、D-19 | `src/router.tsx` |
-| R05 | hash 的地址解析、导航栈、外部 hashchange、base 和 state | M-HASH、D-04～D-05、D-18 | `src/router.tsx` |
+| R01 | 路径规范化、拼接、相对路径、base 截断、URL 对象及静态路径编码 | U-PATH、U-JOIN、U-RESOLVE、U-BASE、D-10～D-12、D-16～D-17、X-ENC、X-JOIN | `src/utils.ts`、`src/path-encoding.ts`、`src/link.tsx`、`src/router.tsx` |
+| R02 | 静态、命名参数、重复参数、`*`、`**`、Unicode 静态段及精确边界 | U-MATCH、C-ROUTES、D-08、D-13～D-15、X-PARAM | `src/utils.ts`、`src/routes.tsx`、`src/path-encoding.ts` |
+| R03 | 分组、嵌套布局、叶子页面、空值、404、动态替换 entry、叶子 outlet null | C-ROUTES、C-OUTLET、D-09、X-TYPE | `src/routes.tsx`、`src/outlet.tsx`、`index.d.ts` |
+| R04 | history 的 push / replace / delta / back / forward / base / 事件 | M-HISTORY、D-06～D-07、D-17、D-19、MAN-03 | `src/router.tsx` |
+| R05 | hash 的地址解析、导航栈、外部 hashchange、base 和 state | M-HASH、D-04～D-05、D-18、X-HASH-01 | `src/router.tsx` |
 | R06 | memory 页面切换、状态隔离、独立于浏览器、非浏览器渲染 | M-MEMORY、U-NODE、I-JOURNEY-04、D-01～D-03 | `src/router.tsx` |
 | R07 | Link 属性、ref、自定义元素、点击选项和浏览器默认行为 | C-LINK、H-RESOLVE、D-20～D-22 | `src/link.tsx` |
-| R08 | Navigate / Redirect 的 effect、delta 优先级、替换行为 | C-NAVIGATE、C-REDIRECT、I-JOURNEY-02 | `src/navigate.tsx` |
+| R08 | Navigate / Redirect 的 effect、声明去重、delta 优先级、替换行为 | C-NAVIGATE、C-REDIRECT、I-JOURNEY-02、X-NAV | `src/navigate.tsx`、`src/router.tsx` |
 | R09 | 全部文档化 Hooks、元数据、查询重复键、参数清理 | C-OUTLET、H-QUERY、H-PARAM、H-RESOLVE、I-JOURNEY-01 | `src/router.tsx`、`src/outlet.tsx` |
-| R10 | 同步 ref、批量更新、location 快照、监听清理、StrictMode | U-SYNC、U-LOCATION、U-GUARD、M-HISTORY-14～15、M-HASH-12、I-JOURNEY-05 | `src/utils.ts`、`src/router.tsx` |
-| R11 | 嵌套路由器同步与业务组合 | I-JOURNEY-01～06 | `src/router.tsx` 及组件组合 |
-| R12 | 公开 TypeScript 使用契约与运行时导出一致性 | T01～T03、D-23～D-24 | `index.d.ts`、`src/index.ts` |
+| R10 | 同步 ref、批量更新、location 快照、监听清理、StrictMode | U-SYNC、U-LOCATION、U-GUARD、M-HISTORY-14～16、M-HASH-12～13、I-JOURNEY-05 | `src/utils.ts`、`src/router.tsx` |
+| R11 | 嵌套路由器同步与业务组合 | I-JOURNEY-01～06、X-NEST | `src/router.tsx` 及组件组合 |
+| R12 | 公开 TypeScript 使用契约与运行时导出一致性 | T01～T03、D-23～D-24、X-TYPE-02 | `index.d.ts`、`src/index.ts` |
 
 尚未完成的项目包括实际部署服务器的 history 回退规则、真实浏览器滚动与下载、多浏览器兼容、性能容量。它们有明确手工用例，需在目标环境继续执行；本轮 ESM/CJS 发布包的隔离构建与消费已通过，见第6.1节。库没有提供的加载器、异步数据请求、真实登录鉴权、导航拦截器、URL 持久化存储等不列为产品能力；测试中的鉴权布局只是组合示例。
 
@@ -80,8 +80,8 @@ npm run test:browser
 | 命令 | 用途 | 主要输出 |
 | --- | --- | --- |
 | `npm test` | 全量自动化；发布功能门禁 | `test/reports/all/results.json`、`junit.xml` |
-| `npm run test:baseline` | 排除 `regressions` 目录，检查已有通过行为是否回退 | `test/reports/baseline/`；本轮 232 / 232 通过 |
-| `npm run test:regressions` | 保留缺陷契约和补充边界的回归门禁 | `test/reports/regressions/`；本轮 111 / 111 通过 |
+| `npm run test:baseline` | 排除 `regressions` 目录，检查已有通过行为是否回退 | `test/reports/baseline/`；本轮 234 / 234 通过 |
+| `npm run test:regressions` | 保留缺陷契约和补充边界的回归门禁 | `test/reports/regressions/`；本轮 169 / 169 通过 |
 | `npm run test:coverage` | 执行全量测试并统计所有 `src` 模块覆盖率；失败也生成报告 | `test/reports/coverage/`；`test/coverage/index.html`、`lcov.info`、`coverage-summary.json` |
 | `npm run test:types` | 类型检查源码、测试、浏览器测试台和全部正反向消费者示例 | 编译输出 / 退出码；11 处 `@ts-expect-error`，含原有 7 处 |
 | `npm run test:watch` | 开发期间全量监听执行 | `test/reports/watch/` |
@@ -92,8 +92,8 @@ npm run test:browser
 
 ```bash
 npm test -- test/modes/history.test.tsx
-npm test -- -t D-01
-npm run test:baseline -- -t H-QUERY
+node test/run.mjs all -t D-01
+node test/run.mjs baseline -t H-QUERY
 ```
 
 定向运行会覆盖对应 profile 的报告，而且不代表全量结果。生成清单前必须重新执行无过滤条件的 `npm test`。运行器可从 Windows、Linux、macOS 调用，不依赖 `VAR=value command` 或 PowerShell 专属环境变量写法。
@@ -110,7 +110,7 @@ hash 导航等待可观察的 route 更新，不用固定延迟代替断言。�
 
 ## 4. 自动化测试用例
 
-下表给出测试人员可执行的功能步骤与验收预期。参数化输入会展开为独立执行结果；**全部 343 条展开后的名称、所在文件与结果见 [CASE_CATALOG.md](CASE_CATALOG.md)**。用例名前缀可直接传给 `-t` 过滤。
+下表给出测试人员可执行的功能步骤与验收预期。参数化输入会展开为独立执行结果；**全部 403 条展开后的名称、所在文件与结果见 [CASE_CATALOG.md](CASE_CATALOG.md)**。用例名前缀可直接传给 `-t` 过滤。
 
 ### 4.1 工具函数
 
@@ -156,9 +156,11 @@ hash 导航等待可观察的 route 更新，不用固定延迟代替断言。�
 | M-HISTORY-08～10 | delta=0/-2、back/forward、接收 popstate、真实 jsdom 往返 | 委托参数正确；0 不动；页面与参数随地址更新 | P1 |
 | M-HISTORY-11～13 | scrollRestore、setState、同 URL 导航、无 state 导航 | 浏览器属性为 auto/manual；对象 state 同步；无 state 时清空 | P1 |
 | M-HISTORY-14～15 | 卸载、发送未改变 URL 和 state 的事件 | 移除同一个监听器；URL/state 均未变更时不额外更新上下文 | P1 |
+| M-HISTORY-16 / MAN-03 | push about → users/42 → replace users/43；原生 back/forward | replace 不增加记录；往返只能到 about 与 users/43，页面、参数和 state 同步 | P1 |
 | M-HASH-01～04 | 外层 URL 有 query；hash 有路径/query/fragment；相对导航 | 仅读取内部路由；外层 pathname/query 保留；目标内容正确 | P0 |
 | M-HASH-05～08 | push/back/forward、返回后新 push、越界 delta、直接改 hash | 往返正确；新分支清除前进链；越界无害；外部 hashchange 生效 | P1 |
 | M-HASH-09～12 | 初始 base 深链、context state、跨源对象、卸载 | 初始化能截掉 base；state 局部更新；跨源对象拒绝；监听移除 | P1 |
+| M-HASH-13 / X-HASH-01 | 两次带不同 state 的 hash 导航后原生 back/forward | hash、routeURL、页面和参数更新；Router 不写宿主 native state；局部 state 恢复边界见第 5 节与 evidence | P1 |
 | M-MEMORY-01～04 | 根初始化、发起导航、对象/函数 state、检查事件订阅 | 根页可见；不修改浏览器 URL/History/滚动设置；state 可更新；无浏览器路由事件监听 | P1 |
 | D-01～D-24 | 依第 5 节执行缺陷契约及补充边界用例 | 必须满足正确预期；本轮均为正常通过 | 按缺陷表 |
 
@@ -180,7 +182,7 @@ M-MEMORY-02 验证导航的浏览器副作用隔离；D-01 及新增连续旅程
 
 `types/regressions` 现已纳入常规类型门禁，同时由 D-23/D-24 的独立 compiler program 验证；两处均为 `skipLibCheck=false`。五个补齐导出通过包名导入并实际用于 JSX、Provider、useContext 及 boolean 返回值。独立编译用例的超时为 15 秒，以容纳完整声明检查叠加 V8 插桩；不改变诊断必须为空的断言。
 
-### 4.5 本轮补充的 66 项回归
+### 4.5 历史补充的 66 项回归（D-01～D-24）
 
 | 文件 | 新增数 | 核心风险 |
 | --- | ---: | --- |
@@ -191,9 +193,34 @@ M-MEMORY-02 验证导航的浏览器副作用隔离；D-01 及新增连续旅程
 
 类型 fixture 的扩展仍由原 D-23/D-24 两个测试执行，不另计运行时用例。逐项展开结果及关联编号以 CASE_CATALOG 为准。
 
+### 4.6 BUG-01～BUG-07 本轮新增的 41 项有效回归
+
+| 文件 | 新增数 | 覆盖内容 |
+| --- | ---: | --- |
+| `regressions/report-20260910-router.test.tsx` | 28 | Navigate/Redirect 去重、父子 Router 刷新、三模式静态路径与 Unicode/空格 base、叶子 outlet 返回值 |
+| `regressions/report-20260910-path.test.ts` | 13 | 协议 authority、点段与 query/fragment 保真、特殊参数名和重复参数 |
+
+X-HASH-01 保留在修复计划的支持边界探针中，不迁入绿色回归：hash 原生 back/forward 的局部 state 游标统一仍未承诺。新增的 `M-HASH-13` 只断言可承诺的 URL、页面、参数和宿主 native state 不变，不把错误的业务 state 结果标为通过。另有 `types/regressions/outlet.tsx`，由声明测试编译检查 nullable `Outlet`/`Navigate` 结果，不计入上述 41 项。
+
+本轮组合验收至少覆盖 Unicode base + 静态祖先 + 动态后代、`__proto__` 参数清理、持久 Navigate 与嵌套路由器、相对路径解析与 StrictMode/mode 切换，以及 memory SSR 与包类型消费。运行时与类型回归均保留可定位的 X 编号，不使用跳过或预期失败标记。
+
 ## 5. 已复现缺陷与正确验收预期
 
 以下 24 个编号在本轮选定的自动化范围内均已修复并回归通过，不是豁免。原 45 个失败用例全部保留。缺陷编号是本地编号，没有代替团队创建线上缺陷单。表中最后一列保留修复前实际；本轮实现、测试数量与剩余限制见 FIX_REPORT。D-04/D-18 的关闭仅对应 Router API 局部历史契约，不关闭 MAN-06/09 的原生 hash 历史范围扩展。
+
+### 5.1 BUG-01～BUG-07 修复追踪
+
+| 编号 | 修复内容 | 回归 | 状态 |
+| --- | --- | --- | --- |
+| BUG-01 | Navigate 按有效 `to`/`delta`、选项、mode/base 去重；使用最新 navigate 引用 | X-NAV-01～02 | 已通过 |
+| BUG-02 | 父级 browser Router 更新后刷新已挂载子级快照，保留子实例与各自 base | X-NEST-01～03 | 已通过 |
+| BUG-03 | 路由索引中的静态非 ASCII/空格段统一为 URL 编码表示 | X-ENC-01、X-ENC-03 | 已通过 |
+| BUG-04 | base 截断仅在内部匹配边界使用编码前缀，公开 base 保持原值 | X-ENC-02 | 已通过 |
+| BUG-05 | joinPath 分离 authority、pathname、suffix，精确识别点段 | X-JOIN-01、D-11、D-16 | 已通过 |
+| BUG-06 | 特殊参数名通过可枚举自身属性安全写入并在 Routes 中复制 | X-PARAM-01～02、D-09、D-15 | 已通过 |
+| BUG-07 | 叶子 `useOutlet`/`Outlet` 返回 `null`，声明与运行时一致 | X-TYPE-01～02 | 已通过 |
+
+X-HASH-01 是计划保留的已知边界：hash 原生 back/forward 不恢复局部业务 state 游标，因此不计入绿色回归，也不影响上述 7 项关闭。`M-HASH-13` 仅验证 native traversal 的 URL、页面、参数更新和宿主 state 未被 Router 写入；完整观察记录见 [native hash evidence](reports/20260912-175014/evidence/native-hash/boundary.json)。
 
 | 编号 / 优先级 / 来源 | 最小复现 | 正确预期 | 修复前实际（历史记录） |
 | --- | --- | --- | --- |
@@ -237,10 +264,10 @@ M-MEMORY-02 验证导航的浏览器副作用隔离；D-01 及新增连续旅程
 | MAN-03 / P1 | history；依次导航 about、users/42，勾 replace 导航 users/43；分别用浏览器与控制台后退/前进 | replace 不增加记录；返回到 about；前进到 users/43；页面/URL/参数同步 | 未执行 |
 | MAN-04 / P1 | 分别选 history/hash、base=/app；点用户 42；再输入不带 /app 的地址并刷新 | 部署前缀只出现一次；正确内部路径；超出 base 显示 404 | 未执行；hash 有 D-05 |
 | MAN-05 / P0 | hash、base=/；点击“用户 42” | 地址变为 /#/users/42?tab=profile；详情、参数和查询正确；外层路径不变 | 通过 |
-| MAN-06 / P1 | hash；执行 MAN-03 的序列；再手工编辑 hash、使用浏览器返回和控制台返回 | 替换只影响当前项；两种返回都与实际历史一致；外部 hash 可进入正确页面 | 未执行；D-04/D-18 待修复 |
+| MAN-06 / P1 | hash；执行 MAN-03 的序列；再手工编辑 hash、使用浏览器返回和控制台返回 | 替换只影响当前项；Router API 返回恢复局部 state；原生返回保证 hash、页面和参数更新，局部 state 限制按 X-HASH-01 记录；外部 hash 可进入正确页面 | 原生 state 范围扩展未执行 |
 | MAN-07 / P0 | memory、base=/；点击用户 42；随后导航 about、返回、前进、replace | URL 始终不变；页面/参数随内存历史变化 | 首次点击失败 D-01；后续步骤受阻 |
 | MAN-08 / P1 | history、base=/；点“函数式 state +1” | 不抛错；context 与 native state 都是 `{count:1}` | 失败 D-07；真实 DataCloneError |
-| MAN-09 / P1 | history/hash 两次导航不同 JSON state，再返回、前进、刷新 | 每个历史项拿回自己的 state；history 刷新可读取原生 state | 未执行；D-06/D-18 待修复 |
+| MAN-09 / P1 | history/hash 两次导航不同 JSON state，再返回、前进、刷新 | history 每个原生历史项拿回自己的 state；hash 的 Router API 历史项拿回自己的 state，原生 hash 返回只保证 URL、页面和参数，刷新从当前 hash 以 null state 开始 | history 已由自动化覆盖；hash 原生 state 范围扩展未执行 |
 | MAN-10 / P1 | 用 Tab 聚焦 Link 并 Enter；Ctrl/Meta/Shift/Alt、中键打开用户链接 | 普通激活只导航一次；修饰键遵循该平台原生语义；焦点可见且键盘可达 | 未执行完整矩阵；D-20 |
 | MAN-11 / P1 | 在首页点击“已取消的 About 链接”；另测“新标签打开 About”和“下载链接” | 取消不动；新页出现且当前页不导航；下载保留浏览器语义 | 未执行；D-21/D-22 |
 | MAN-12 / P1 | history 的 About 滚到页底；分别选择 scrollRestore=true/false 导航；使用浏览器返回 | 核对 README 的保留 / 回顶语义与实际位置；记录导航前后 scrollY 和浏览器策略 | 未执行，不能由 auto/manual 属性通过替代 |
@@ -252,9 +279,9 @@ M-MEMORY-02 验证导航的浏览器副作用隔离；D-01 及新增连续旅程
 
 此前浏览器抽查使用 **Codex 内置浏览器**，没有采集内核精确版本，不算 Chrome/Edge/Firefox/Safari 矩阵认证。修复前 MAN-01、02、05 通过，MAN-07、08 失败；这些历史结果保留如上。本轮复测结果如下。
 
-### 6.1 本轮浏览器及打包复测（2026-09-10）
+### 6.1 本轮浏览器及打包复测（2026-09-12）
 
-本轮仍使用 Windows 上的 Codex 内置浏览器与本地 Vite；内核精确版本未采集。原始状态及说明见 [浏览器记录](reports/20260910-132525-fixed/BROWSER_REPORT.md)。测试台新增 native back/forward 按钮、不可克隆 state 按钮、完整内部 routeURL 和 historyLength，便于区分原生与局部行为。
+本轮仍使用 Windows 上的 Codex 内置浏览器与本地 Vite；内核精确版本未采集。原始状态及说明见 [浏览器记录](reports/20260910-132525-fixed/BROWSER_REPORT.md)，本轮 X-HASH-01 的原始序列见 [native hash evidence](reports/20260912-175014/evidence/native-hash/boundary.json)。测试台新增 native back/forward 按钮、不可克隆 state 按钮、完整内部 routeURL 和 historyLength，便于区分原生与局部行为。
 
 | 项目 | 本轮结果 / 限制 |
 | --- | --- |
@@ -262,14 +289,16 @@ M-MEMORY-02 验证导航的浏览器副作用隔离；D-01 及新增连续旅程
 | MAN-02、MAN-08、MAN-09 history | 函数 updater 得到 `{count:1}`；同 URL 两项 state 1/2 随原生后退/前进恢复；深链刷新保留原生 state。不可克隆结果报 DataCloneError，context/native state、URL 和长度均不变 |
 | MAN-04/05 hash base | `/app` 下用户 Link 得到 `#/app/users/42?tab=profile` 并匹配 `/users/42`；完整 base/越界矩阵由自动化覆盖 |
 | MAN-06、MAN-09 hash Router API | replace 长度保持 13；Router.back 恢复 about/step=1，forward 恢复 users/8/step=3；通过局部历史范围 |
-| MAN-06、MAN-09 hash 原生返回 | **范围扩展验收未通过**：从 users/1 原生后退到 about 后，state 仍为 `{nativeStep:2}`。Router 的局部游标不与原生记录统一；不通过 URL 猜测恢复，不覆盖宿主 state；见 FIX_PLAN 4.6 |
+| MAN-06、MAN-09 hash 原生返回 | **范围扩展验收未通过**：从 users/1 原生后退到 about 后，state 仍为 `{nativeStep:2}`。Router 的局部游标不与原生记录统一；不通过 URL 猜测恢复，不覆盖宿主 state；见 [本轮 evidence](reports/20260912-175014/evidence/native-hash/boundary.json) |
 | MAN-07 memory | `/app` 根 → 用户42 → about → users/7 → back → replace users/8 → forward：页面/params/state 正确，forward 仍到 users/7；浏览器 URL 和长度始终不变 |
 | MAN-10 修饰键/中键 | 已实际点击 Control/Meta/Shift/Alt/中键；Control 保持当前页，Windows 内置浏览器的 Meta 走当前页原生导航。平台完整矩阵、焦点可见性和新窗口结果仍待验证 |
 | MAN-11 | 取消链接不导航；`_blank` 点击保持原页，但工具未呈现新标签；下载点击没有收到 download 事件。新标签/下载最终结果记为受阻，不将自动化通过替代浏览器完成 |
 | MAN-13 冒烟 | 静态 new、docs/intro 单段捕获、files/a/b/c、private→login 携带 state、404 通过；docs/a/b、files 空余段等完整边界由自动化覆盖 |
 | D-19 | 同实例 mode 切换、重入重置、StrictMode 成对监听、卸载后事件均由新增自动化通过；重建测试台不代替它 |
-| MAN-16 | 隔离源码快照的 build、独立 ESM/CJS 编译、build:alias、pack dry-run/实际 tarball 均通过；独立 React19 消费者安装后 import/require 渲染 Router/Link、完整类型检查均通过，包不含 test |
-| MAN-03 全序列、MAN-12/14/15/17 | 本轮未完成完整原生历史序列、真实滚动、浏览器矩阵、性能基准、实际部署；保留发布门禁 |
+| MAN-16 | 隔离源码快照的 build、独立 ESM/CJS 编译、build:alias、pack dry-run/实际 tarball 均通过；当前工作区 tarball 的独立 React19 消费者 import/require、Router/Link SSR 和类型检查均通过，包不含 test |
+| MAN-03 全序列、MAN-12/14/15/17 | MAN-03 的 jsdom 自动化完整序列已加入 `M-HISTORY-16` 并通过；真实浏览器 native history 序列、滚动、浏览器矩阵、性能基准、实际部署仍未完成，保留发布门禁 |
+
+BUG-01～BUG-04 的独立修复浏览器探针另使用 Playwright Chromium 151 执行：Navigate 6/6、嵌套 Router 5/5、Unicode/空格路由与 base 9/9；结果及截图位于 `reports/20260910-135202/evidence/fix-verification/browser/`。该探针不覆盖 X-HASH-01，也不能代替 MAN-03、MAN-12～17 的完整发布矩阵。
 
 MAN-12 特别注意：设置 `history.scrollRestoration='manual'` 不等同于主动 `scrollTo(0,0)`。README 的注释与浏览器行为可能不一致，实际滚动验收必须另行完成。开发服务器的 SPA 回退也不代表生产服务器已经配置正确。
 
@@ -353,19 +382,19 @@ MAN-12 特别注意：设置 `history.scrollRestoration='manual'` 不等同于�
 
 | 验证项 | 本轮结果 |
 | --- | --- |
-| 类型 | `test:types` 退出码 0；包含全部类型 fixture；原 7 个和新增 4 个类型负例保留有效 |
-| 功能基线 | 10 文件，232 / 232，通过；退出码 0 |
-| 缺陷回归 | 5 文件，111 / 111，通过；退出码 0 |
-| 无过滤全量 | 15 文件，343 / 343，通过；无失败/跳过/未处理异常；退出码 0 |
-| 修复前用例对照 | 原 277 个完整名称全部保留并通过；包含原 45 个缺陷失败和原 232 个通过项 |
-| 覆盖率 | statements 337/337、lines 324/324、functions 67/67 均为 100%；branches 248/250 = 99.2%；门限不变，退出码 0 |
-| 未覆盖分支 | Router 的既有协议 base 判断；matchPath 的无首斜杠裸 `**` 分支。未引入造假 mock |
-| 用例清单 | 最后一次无过滤 `npm test` 后生成，共343项；逐 D 编号统计通过/失败 |
+| 类型 | `test:types` 退出码 0；包含全部类型 fixture；原有负例与新增 nullable fixture 均保留 |
+| 功能基线 | 10 文件，234 / 234，通过；退出码 0 |
+| 缺陷回归 | 7 文件，169 / 169，通过；退出码 0 |
+| 无过滤全量 | 17 文件，403 / 403，通过；无失败/跳过/未处理异常；退出码 0 |
+| 修复前用例对照 | 原 277 个完整名称全部保留并通过；包含原 45 个缺陷失败和原 232 个通过项；新增 41 项有效 BUG 回归及其组合邻接断言 |
+| 覆盖率 | statements 376/387 = 97.15%、lines 360/369 = 97.56%、functions 75/77 = 97.4%、branches 312/325 = 96%；门限不变，退出码 0 |
+| 未覆盖分支 | Navigate 的失败/无目标路径、Router 的既有协议 base 判断和工具边界分支；未引入造假 mock |
+| 用例清单 | 最后一次无过滤 `npm test` 后生成，共403项；逐 D/BUG 编号统计通过/失败 |
 | 构建/打包 | 独立编译、实际打包、离线独立消费者安装、ESM/CJS SSR 与类型检查均返回 0 |
-| 执行证据 | `reports/20260910-132525-fixed/`：四组 JSON/JUnit、日志、覆盖率、浏览器记录与截图、包清单及消费日志 |
+| 执行证据 | `reports/20260912-175014/`：本轮报告、自动化结果及 native hash evidence；BUG-01～BUG-07 的扩展探针与历史打包/浏览器证据仍在 `reports/20260910-135202/` 和 `reports/20260910-132525-fixed/` |
 | 仍需发布验收 | hash 原生历史/state 范围扩展、新标签/下载结果、完整浏览器/滚动矩阵、性能、目标 CI 干净安装及实际部署 |
 
-交付结论为“本轮 24 类既有自动化缺陷修复完成；完整产品发布验收未完成”。修复尚在工作区，未创建 Git 提交；原有暂存删除和测试重整已保留。发布时仍需由对应负责人确认剩余验证、目标平台和 hash 原生历史支持范围。
+交付结论为“BUG-01～BUG-07 的 41 项有效自动化回归与原有 343 项均通过；完整产品发布验收未完成”。修复尚在工作区，未创建 Git 提交。发布时仍需由对应负责人确认剩余验证、目标平台和 hash 原生历史支持范围。
 
 ## 9. 测试工具参考
 

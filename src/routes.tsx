@@ -3,6 +3,7 @@ import {RouteItem} from '../index'
 import {useRouter} from './router'
 import {isUnset, matchPath} from './utils'
 import {Outlet, RouteLayoutStackIndex, RouteStack} from './outlet'
+import {encodePathText} from './path-encoding'
 
 const parentMap = new WeakMap<RouteItem, RouteItem>()
 
@@ -36,10 +37,13 @@ export const Routes = memo(({entry, notFound}: {
                 const [p] = path
                 parentMap.set(child, route)
                 const childIsDynamic = isDynamic || p === ':' || path === '*' || path === '**'
+                const childPath = p === '#' || p === ':' || path === '*' || path === '**'
+                    ? path
+                    : encodePathText(path)
 
                 recurse(
                     child,
-                    p === '#' ? paths : [...paths, path],
+                    p === '#' ? paths : [...paths, childPath],
                     childIsDynamic
                 )
             }
@@ -76,7 +80,12 @@ export const Routes = memo(({entry, notFound}: {
             const matched = matchPath(pathname, path)
             if (matched) {
                 for (const k in matched) {
-                    params[k] = matched[k]
+                    Object.defineProperty(params, k, {
+                        value: matched[k],
+                        enumerable: true,
+                        writable: true,
+                        configurable: true
+                    })
                 }
                 return combineStack(route)
             }
