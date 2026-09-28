@@ -24,11 +24,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://gitee.com/canlooks/c_reactive"
+    "url": "https://github.com/canlooks/react-router"
   },
-  "homepage": "https://gitee.com/canlooks/c_reactive",
+  "homepage": "https://github.com/canlooks/react-router",
   "bugs": {
-    "url": "https://gitee.com/canlooks/c_reactive/issues",
+    "url": "https://github.com/canlooks/react-router/issues",
     "email": "canlooks@gmail.com"
   },
   "license": "MIT",
